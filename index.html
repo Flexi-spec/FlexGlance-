@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FlexGlance</title>
+<style>
+  :root{
+    --bg: #0b1220;
+    --card: rgba(255,255,255,0.08);
+    --card-strong: rgba(255,255,255,0.12);
+    --text: #e9eefc;
+    --muted: #b8c2df;
+    --accent: #6ea8ff;
+    --good: #51d88a;
+    --warn: #f6c453;
+    --bad:  #ff6b6b;
+    --radius: 20px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    background: radial-gradient(1200px 700px at 70% -10%, #1a2b5c 0%, #0b1220 60%), var(--bg);
+    color: var(--text);
+    display:flex;
+    min-height:100%;
+  }
+  .app{
+    display:grid;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 18px;
+    padding: clamp(16px, 3vw, 28px);
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 12px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.5px;
+  }
+  .brand .logo{
+    width:34px; height:34px; border-radius:12px;
+    background: linear-gradient(135deg,#6ea8ff, #7af0c0);
+    display:grid; place-items:center; color:#0b1220; font-weight:900;
+    box-shadow: 0 10px 25px rgba(110,168,255,.35);
+  }
+  .tools{display:flex; gap:10px; flex-wrap:wrap}
+  .btn, .input{
+    border:1px solid transparent;
+    background: var(--card);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 12px;
+    outline: none;
+    backdrop-filter: blur(6px);
+  }
+  .btn{
+    cursor:pointer;
+    transition:.2s ease;
+  }
+  .btn:hover{ background: var(--card-strong) }
+  .btn.primary{ background: linear-gradient(135deg,#6ea8ff,#7af0c0); color:#0b1220; font-weight:700; }
+  .btn.ghost{ background: var(--card); }
+  .input{
+    width: min(60vw, 360px);
+  }
+  .toggle{
+    display:flex; align-items:center; gap:6px; padding:10px 12px; border-radius: 12px; background: var(--card);
+  }
+  .main{
+    display:grid;
+    grid-template-columns: 1.2fr .8fr;
+    gap: 18px;
+  }
+  @media (max-width: 880px){
+    .main{ grid-template-columns: 1fr; }
+  }
+  .panel{
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: var(--radius);
+    padding: clamp(14px, 2.5vw, 20px);
+    backdrop-filter: blur(6px);
+  }
+  .current{
+    display:grid; gap: 10px;
+  }
+  .current .top{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  }
+  .big{
+    font-size: clamp(42px, 8vw, 72px);
+    font-weight: 800;
+    line-height: .95;
+  }
+  .desc{ color: var(--muted); font-size: 16px }
+  .meta{ display:flex; gap: 14px; flex-wrap: wrap; color: var(--muted); }
+  .chip{
+    background: var(--card-strong);
+    padding: 8px 10px; border-radius: 999px; font-size: 13px;
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .days{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 540px){
+    .days{ grid-template-columns: 1fr; }
+  }
+  .day{
+    border-radius: 16px;
+    padding: 14px;
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .day h3{ margin: 0 0 6px; font-size: 16px; color: var(--muted) }
+  .day .t{ font-size: 28px; font-weight: 800 }
+  .stack{ display:flex; align-items:center; justify-content:space-between; gap:10px }
+  .footer{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .status{ font-size: 14px }
+  .search-row{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  .suggest{ font-size: 13px; color: var(--muted) }
+  .hidden{ display:none !important }
+  .warn{ color: var(--warn) }
+  .err{ color: var(--bad) }
+  .ok{ color: var(--good) }
+</style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <div class="brand">
+        <div class="logo">⛅</div>
+        <div>FlexGlance</div>
+      </div>
+      <div class="tools">
+        <div class="search-row">
+          <input id="search" class="input" placeholder="Search location (e.g., Lagos, London)" />
+          <button id="searchBtn" class="btn">Search</button>
+          <button id="locBtn" class="btn ghost">Use My Location</button>
+        </div>
+        <button id="unitBtn" class="btn">°C</button>
+      </div>
+    </header>
+
+    <section class="panel current" id="currentPanel">
+      <div class="top">
+        <div>
+          <div id="place" style="font-weight:700; font-size:20px;">—</div>
+          <div id="date" class="desc">—</div>
+        </div>
+        <div class="big" id="bigTemp">—</div>
+      </div>
+      <div class="meta">
+        <div class="chip" id="desc">—</div>
+        <div class="chip" id="feels">Feels like —</div>
+        <div class="chip" id="wind">Wind —</div>
+        <div class="chip" id="uv">UV —</div>
+        <div class="chip" id="precip">Rain —</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="days" id="days">
+        <!-- Yesterday / Today / Tomorrow cards injected here -->
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="status" id="status">Ready.</div>
+      <div>Flexi Dev Studio ♥️</div>
+    </footer>
+  </div>
+
+<script>
+/* ========= CONFIG ========= */
+const dom = {
+  status: document.getElementById('status'),
+  place: document.getElementById('place'),
+  date: document.getElementById('date'),
+  bigTemp: document.getElementById('bigTemp'),
+  desc: document.getElementById('desc'),
+  feels: document.getElementById('feels'),
+  wind: document.getElementById('wind'),
+  uv: document.getElementById('uv'),
+  precip: document.getElementById('precip'),
+  days: document.getElementById('days'),
+  search: document.getElementById('search'),
+  searchBtn: document.getElementById('searchBtn'),
+  locBtn: document.getElementById('locBtn'),
+  unitBtn: document.getElementById('unitBtn'),
+  app: document.getElementById('app'),
+};
+
+let UNIT = 'metric'; // 'metric' (°C) or 'imperial' (°F)
+
+/* ========= UTILITIES ========= */
+const fmt = new Intl.DateTimeFormat(undefined, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+const shortDay = new Intl.DateTimeFormat(undefined, { weekday:'short' });
+
+const KPH = mps => (mps * 3.6);
+const MPH = mps => (mps * 2.23693629);
+const toF = c => (c * 9/5) + 32;
+const round = (n, d=0) => Number.parseFloat(n).toFixed(d);
+
+function setStatus(text, cls=''){
+  dom.status.className = 'status ' + cls;
+  dom.status.textContent = text;
+}
+
+async function jget(url, timeoutMs = 15000){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), timeoutMs);
+  try{
+    const res = await fetch(url, {signal: ctrl.signal});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/* ========= WEATHER CODE MAP ========= */
+function codeToInfo(code){
+  // Based on WMO weather interpretation codes
+  const table = {
+    0:  {text:'Clear sky', emoji:'☀️'},
+    1:  {text:'Mainly clear', emoji:'🌤️'},
+    2:  {text:'Partly cloudy', emoji:'⛅'},
+    3:  {text:'Overcast', emoji:'☁️'},
+    45: {text:'Fog', emoji:'🌫️'},
+    48: {text:'Rime fog', emoji:'🌫️'},
+    51: {text:'Light drizzle', emoji:'🌦️'},
+    53: {text:'Drizzle', emoji:'🌦️'},
+    55: {text:'Dense drizzle', emoji:'🌦️'},
+    56: {text:'Freezing drizzle', emoji:'🌧️'},
+    57: {text:'Freezing drizzle', emoji:'🌧️'},
+    61: {text:'Light rain', emoji:'🌧️'},
+    63: {text:'Rain', emoji:'🌧️'},
+    65: {text:'Heavy rain', emoji:'🌧️'},
+    66: {text:'Freezing rain', emoji:'🌧️'},
+    67: {text:'Freezing rain', emoji:'🌧️'},
+    71: {text:'Light snow', emoji:'❄️'},
+    73: {text:'Snow', emoji:'❄️'},
+    75: {text:'Heavy snow', emoji:'❄️'},
+    77: {text:'Snow grains', emoji:'❄️'},
+    80: {text:'Rain showers', emoji:'🌧️'},
+    81: {text:'Rain showers', emoji:'🌧️'},
+    82: {text:'Violent rain', emoji:'⛈️'},
+    85: {text:'Snow showers', emoji:'🌨️'},
+    86: {text:'Heavy snow showers', emoji:'🌨️'},
+    95: {text:'Thunderstorm', emoji:'⛈️'},
+    96: {text:'Thunderstorm + hail', emoji:'⛈️'},
+    99: {text:'Thunderstorm + heavy hail', emoji:'⛈️'},
+  };
+  return table[code] ?? {text:'—', emoji:'❔'};
+}
+
+/* ========= RENDER HELPERS ========= */
+function paintBackground(code){
+  // subtle theme shift by weather
+  const clearish = [0,1,2];
+  const rainy = [51,53,55,61,63,65,80,81,82,66,67];
+  const snowy = [71,73,75,77,85,86];
+  const storm = [95,96,99];
+  let grad;
+  if (clearish.includes(code)) {
+    grad = 'radial-gradient(1200px 700px at 70% -10%, #2b7fff 0%, #0b1220 60%)';
+  } else if (rainy.includes(code)) {
+    grad = 'radial-gradient(1200px 700px at 70% -10%, #3a4a6a 0%, #0b1220 60%)';
+  } else if (snowy.includes(code)) {
+    grad = 'radial-gradient(1200px 700px at 70% -10%, #8aa9ff 0%, #0b1220 60%)';
+  } else if (storm.includes(code)) {
+    grad = 'radial-gradient(1200px 700px at 70% -10%, #563a6a 0%, #0b1220 60%)';
+  } else {
+    grad = 'radial-gradient(1200px 700px at 70% -10%, #1a2b5c 0%, #0b1220 60%)';
+  }
+  document.body.style.backgroundImage = grad + ', var(--bg)';
+}
+
+function toUnitTemp(c){
+  return UNIT === 'imperial' ? toF(c) : c;
+}
+function unitTempSymbol(){ return UNIT === 'imperial' ? '°F' : '°C'; }
+function windToUnit(mps){
+  return UNIT === 'imperial' ? MPH(mps) : KPH(mps);
+}
+function windUnit(){ return UNIT === 'imperial' ? 'mph' : 'km/h'; }
+
+function card(label, emoji, tmaxC, tminC, code, precip){
+  const tmax = round(toUnitTemp(tmaxC), 0);
+  const tmin = round(toUnitTemp(tminC), 0);
+  const info = codeToInfo(code);
+  return `
+    <div class="day">
+      <h3>${label}</h3>
+      <div class="stack">
+        <div>
+          <div class="t">${tmax}${unitTempSymbol()}</div>
+          <div class="desc">Low: ${tmin}${unitTempSymbol()}</div>
+          <div class="desc">Rain: ${round(precip || 0, 1)} mm</div>
+        </div>
+        <div style="font-size:34px" title="${info.text}">${info.emoji}</div>
+      </div>
+    </div>
+  `;
+}
+
+/* ========= OPEN-METEO FETCH =========
+   We’ll request:
+   - current: temperature, apparent, weather code, wind
+   - daily: yesterday + today + tomorrow via past_days=1 & forecast_days=2
+*/
+async function getByLatLon(lat, lon){
+  setStatus('Loading weather…');
+  // Forecast API
+  const url = new URL('https://api.open-meteo.com/v1/forecast');
+  url.search = new URLSearchParams({
+    latitude: lat,
+    longitude: lon,
+    current: 'temperature_2m,apparent_temperature,weather_code,wind_speed_10m',
+    hourly: 'temperature_2m,relative_humidity_2m,precipitation,weather_code',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum',
+    timezone: 'auto',
+    past_days: '1',
+    forecast_days: '2',
+  }).toString();
+
+  const data = await jget(url.toString());
+
+  // Reverse geocode for nice place name
+  let placeName = `${round(lat,2)}, ${round(lon,2)}`;
+  try{
+    const rev = await jget(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1&language=en`);
+    if(rev?.results?.length){
+      const r = rev.results[0];
+      placeName = [r.name, r.admin1, r.country].filter(Boolean).join(', ');
+    }
+  }catch{}
+
+  renderAll(data, placeName);
+}
+
+function renderAll(data, placeName){
+  const cur = data.current;
+  const d = data.daily;
+
+  const info = codeToInfo(cur.weather_code);
+  paintBackground(cur.weather_code);
+
+  // Current panel
+  dom.place.textContent = placeName;
+  dom.date.textContent = fmt.format(new Date());
+  dom.bigTemp.textContent = `${round(toUnitTemp(cur.temperature_2m), 0)}${unitTempSymbol()}`;
+  dom.desc.textContent = `${info.emoji} ${info.text}`;
+  dom.feels.textContent = `Feels like ${round(toUnitTemp(cur.apparent_temperature),0)}${unitTempSymbol()}`;
+  dom.wind.textContent = `Wind ${round(windToUnit((cur.wind_speed_10m ?? 0)/3.6),0)} ${windUnit()}`; // API gives km/h? Current gives wind_speed_10m in km/h; converting via /3.6 then back; keep label.
+  dom.uv.textContent = `UV ${d.uv_index_max?.[0] ?? '—'}`;
+  dom.precip.textContent = `Rain ${round(d.precipitation_sum?.[0] ?? 0,1)} mm`;
+
+  // Daily cards (yesterday index 0 when using past_days=1)
+  const cards = [];
+  const todayIdx = 1; // with past_days=1, index: 0=yesterday, 1=today, 2=tomorrow
+  const labels = ['Yesterday','Today','Tomorrow'];
+  for(let i=0;i<3;i++){
+    const idx = i; // 0..2
+    const tmax = d.temperature_2m_max[idx];
+    const tmin = d.temperature_2m_min[idx];
+    const code = d.weather_code[idx];
+    const rain = d.precipitation_sum[idx];
+    cards.push(card(labels[i], '', tmax, tmin, code, rain));
+  }
+  dom.days.innerHTML = cards.join('');
+
+  setStatus('Updated ✓', 'ok');
+}
+
+/* ========= SEARCH BY NAME ========= */
+async function searchAndLoad(query){
+  if(!query) return;
+  setStatus('Searching…');
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en`;
+  const data = await jget(url);
+  if(!data?.results?.length){
+    setStatus('No results for that place.', 'warn');
+    return;
+  }
+  const r = data.results[0];
+  await getByLatLon(r.latitude, r.longitude);
+}
+
+/* ========= GEOLOCATION ========= */
+function locateMe(){
+  if(!('geolocation' in navigator)){
+    setStatus('Geolocation not supported on this device.', 'warn');
+    return;
+  }
+  setStatus('Getting precise location…');
+  navigator.geolocation.getCurrentPosition(
+    async pos=>{
+      const {latitude, longitude} = pos.coords;
+      await getByLatLon(latitude, longitude);
+    },
+    err=>{
+      setStatus('Location permission denied. You can still search by city name.', 'warn');
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+  );
+}
+
+/* ========= EVENTS ========= */
+dom.searchBtn.addEventListener('click', ()=> searchAndLoad(dom.search.value.trim()));
+dom.search.addEventListener('keydown', e=>{
+  if(e.key === 'Enter') searchAndLoad(dom.search.value.trim());
+});
+dom.locBtn.addEventListener('click', locateMe);
+dom.unitBtn.addEventListener('click', ()=>{
+  UNIT = (UNIT === 'metric') ? 'imperial' : 'metric';
+  dom.unitBtn.textContent = (UNIT === 'metric') ? '°C' : '°F';
+  // Re-render with new unit using last known data:
+  // Quick approach: trigger a fake refresh by re-searching current place label.
+  // Better: store last lat/lon.
+  if(window.__last){
+    renderAll(window.__last.data, window.__last.place);
+  }
+});
+
+(async function init(){
+  setStatus('Initializing…');
+  // Default: try geolocation. If it fails, fall back to Lagos search.
+  try{
+    navigator.geolocation.getCurrentPosition(async p=>{
+      const {latitude, longitude} = p.coords;
+      // also store last
+      const url = new URL('https://api.open-meteo.com/v1/forecast');
+      url.search = new URLSearchParams({
+        latitude: latitude,
+        longitude: longitude,
+        current: 'temperature_2m,apparent_temperature,weather_code,wind_speed_10m',
+        hourly: 'temperature_2m,relative_humidity_2m,precipitation,weather_code',
+        daily: 'weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum',
+        timezone: 'auto',
+        past_days: '1',
+        forecast_days: '2',
+      }).toString();
+      const data = await jget(url.toString());
+      let placeName = `${round(latitude,2)}, ${round(longitude,2)}`;
+      try{
+        const rev = await jget(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&count=1&language=en`);
+        if(rev?.results?.length){
+          const r = rev.results[0];
+          placeName = [r.name, r.admin1, r.country].filter(Boolean).join(', ');
+        }
+      }catch{}
+      window.__last = {data, place: placeName};
+      renderAll(data, placeName);
+    }, async ()=>{
+      await searchAndLoad('Lagos');
+    }, { enableHighAccuracy:true, timeout: 8000 });
+  }catch{
+    await searchAndLoad('Lagos');
+  }
+
+  // Hook renderAll to track last data for unit toggle
+  const _renderAll = renderAll;
+  renderAll = function(data, place){
+    window.__last = {data, place};
+    _renderAll(data, place);
+  }
+})();
+</script>
+</body>
+</html>

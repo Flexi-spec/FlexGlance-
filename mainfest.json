@@ -1,0 +1,21 @@
+{
+  "name": "FlexGlance",
+  "short_name": "FlexGlance",
+  "description": "FlexGlance is a simple weather app that gives real-time updates on temperature, feels-like, wind, UV index, and rain forecast with a clean, responsive design.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2196f3",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

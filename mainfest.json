@@ -10,12 +10,12 @@
     {
       "src": "favicon.jpg",
       "sizes": "192x192",
-      "type": "jpg"
+      "type": "jpeg"
     },
     {
       "src": "favicon.jpg",
       "sizes": "512x512",
-      "type": "jpg"
+      "type": "jpeg"
     }
   ]
 }

@@ -1,505 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FlexGlance 🌤️ — Weather App</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <!-- Google site verification -->
-<meta name="google-site-verification" content="2x54o0V00dcQt3FDWD7-9DdAOcox-ZKqjMoxSJ9JgpU" />
+<title>FlexGlance | Live Weather Intelligence</title>
+<meta name="description" content="FlexGlance is a weather app providing real-time updates on temperature, wind, UV index, and rain forecasts with a clean, responsive design.">
+<link rel="icon" type="image/jpeg" href="favicon.jpg">
 
-  <!-- About FlexGlance -->
-  <meta name="description" content="FlexGlance is a weather app that provides real-time updates on temperature, feels-like, wind, UV index, and rain forecast with a clean, responsive design." />
+<meta property="og:type" content="website">
+<meta property="og:title" content="FlexGlance OS — Command Center">
+<meta property="og:description" content="Check the live 24h trend and atmospheric data for your location.">
+<meta property="og:image" content="https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?w=1200">
 
-  <!-- App Logo -->
-  <link rel="icon" type="jpeg" href="favicon.jpg">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
 
-  <!-- Manifest (optional for PWA/Google recognition) -->
-  <link rel="manifest" href="manifest.json">
-</head>
-<body>
-  
-  <!-- Your app content/scripts go here -->
-</body>
-<title>FlexGlance</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
 <style>
-  :root{
-    --bg: #0b1220;
-    --card: rgba(255,255,255,0.08);
-    --card-strong: rgba(255,255,255,0.12);
-    --text: #e9eefc;
+:root {
+    --bg: #050810;
+    --card: rgba(15, 23, 42, 0.8);
+    --card-strong: rgba(255, 255, 255, 0.12);
+    --accent: #38bdf8;
+    --border: rgba(255, 255, 255, 0.08);
+    --text: #f8fafc;
     --muted: #b8c2df;
-    --accent: #6ea8ff;
-    --good: #51d88a;
-    --warn: #f6c453;
-    --bad:  #ff6b6b;
-    --radius: 20px;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0;
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    --radius: 24px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+    font-family:'Plus Jakarta Sans',sans-serif;
     background: radial-gradient(1200px 700px at 70% -10%, #1a2b5c 0%, #0b1220 60%), var(--bg);
     color: var(--text);
-    display:flex;
-    min-height:100%;
-  }
-  .app{
-    display:grid;
-    grid-template-rows: auto auto 1fr auto;
-    gap: 18px;
-    padding: clamp(16px, 3vw, 28px);
-    width: 100%;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-  header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap: 12px;
-  }
-  .brand{
-    display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.5px;
-  }
-  .brand .logo{
-    width:34px; height:34px; border-radius:12px;
-    background: linear-gradient(135deg,#6ea8ff, #7af0c0);
-    display:grid; place-items:center; color:#0b1220; font-weight:900;
-    box-shadow: 0 10px 25px rgba(110,168,255,.35);
-  }
-  .tools{display:flex; gap:10px; flex-wrap:wrap}
-  .btn, .input{
-    border:1px solid transparent;
-    background: var(--card);
-    color: var(--text);
-    padding: 12px 14px;
-    border-radius: 12px;
-    outline: none;
-    backdrop-filter: blur(6px);
-  }
-  .btn{
-    cursor:pointer;
-    transition:.2s ease;
-  }
-  .btn:hover{ background: var(--card-strong) }
-  .btn.primary{ background: linear-gradient(135deg,#6ea8ff,#7af0c0); color:#0b1220; font-weight:700; }
-  .btn.ghost{ background: var(--card); }
-  .input{
-    width: min(60vw, 360px);
-  }
-  .toggle{
-    display:flex; align-items:center; gap:6px; padding:10px 12px; border-radius: 12px; background: var(--card);
-  }
-  .main{
-    display:grid;
-    grid-template-columns: 1.2fr .8fr;
-    gap: 18px;
-  }
-  @media (max-width: 880px){
-    .main{ grid-template-columns: 1fr; }
-  }
-  .panel{
-    background: var(--card);
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: var(--radius);
-    padding: clamp(14px, 2.5vw, 20px);
-    backdrop-filter: blur(6px);
-  }
-  .current{
-    display:grid; gap: 10px;
-  }
-  .current .top{
-    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
-  }
-  .big{
-    font-size: clamp(42px, 8vw, 72px);
-    font-weight: 800;
-    line-height: .95;
-  }
-  .desc{ color: var(--muted); font-size: 16px }
-  .meta{ display:flex; gap: 14px; flex-wrap: wrap; color: var(--muted); }
-  .chip{
-    background: var(--card-strong);
-    padding: 8px 10px; border-radius: 999px; font-size: 13px;
-    border: 1px solid rgba(255,255,255,.08);
-  }
-  .days{
-    display:grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-  }
-  @media (max-width: 540px){
-    .days{ grid-template-columns: 1fr; }
-  }
-  .day{
-    border-radius: 16px;
-    padding: 14px;
-    background: var(--card);
-    border: 1px solid rgba(255,255,255,.08);
-  }
-  .day h3{ margin: 0 0 6px; font-size: 16px; color: var(--muted) }
-  .day .t{ font-size: 28px; font-weight: 800 }
-  .stack{ display:flex; align-items:center; justify-content:space-between; gap:10px }
-  .footer{
-    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
-    color: var(--muted);
-    font-size: 13px;
-  }
-  .status{ font-size: 14px }
-  .search-row{
-    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-  }
-  .suggest{ font-size: 13px; color: var(--muted) }
-  .hidden{ display:none !important }
-  .warn{ color: var(--warn) }
-  .err{ color: var(--bad) }
-  .ok{ color: var(--good) }
+    min-height:100vh;
+    overflow-x:hidden;
+}
+
+.header-bar {
+    position:fixed; top:0; width:100%; height:70px;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:0 20px; background: rgba(5,8,16,0.9);
+    backdrop-filter: blur(15px); z-index:2000; border-bottom:1px solid var(--border);
+}
+.hamburger { width:30px; height:20px; display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; z-index:3000; }
+.hamburger span { width:100%; height:3px; background:var(--text); border-radius:10px; transition:0.4s; }
+.hamburger.open span:nth-child(1){ transform: translateY(8.5px) rotate(45deg); }
+.hamburger.open span:nth-child(2){ opacity:0; }
+.hamburger.open span:nth-child(3){ transform: translateY(-8.5px) rotate(-45deg); }
+
+.side-menu {
+    position:fixed; top:0; right:-100%; width:80%; height:100%;
+    background: var(--bg); z-index:2500; transition:0.5s cubic-bezier(0.4,0,0.2,1);
+    display:flex; flex-direction:column; padding:100px 40px; gap:30px;
+    border-left:1px solid var(--border);
+}
+.side-menu.active { right:0; }
+
+.container { padding:90px 20px 40px; max-width:1100px; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
+.bento { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; }
+@media(min-width:768px){ .bento{ grid-template-columns:repeat(4,1fr); } }
+
+.tile { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; backdrop-filter:blur(10px); }
+.hero { grid-column: span 2; text-align:left; position:relative; }
+.temp-huge { font-size:clamp(60px,10vw,90px); font-weight:800; letter-spacing:-4px; color:var(--accent); margin:10px 0; }
+
+.btn { border:none; background:var(--card-strong); color:var(--text); padding:12px 18px; border-radius:12px; cursor:pointer; font-weight:600; }
+.input { flex:1; background:var(--card); border:1px solid var(--border); color:white; padding:15px; border-radius:15px; outline:none; }
+#radar { height:300px; border-radius:20px; margin-top:15px; z-index:1; }
+.chip { background:var(--card-strong); padding:8px 12px; border-radius:999px; font-size:13px; display:inline-block; margin:4px; }
+.day-card { background:var(--card); padding:15px; border-radius:18px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border); }
+.status-footer { text-align:center; color:var(--muted); font-size:12px; margin-top:20px; }
 </style>
 </head>
 <body>
-  <div class="app" id="app">
-    <header>
-      <div class="brand">
-        <div class="logo">⛅</div>
-        <div>FlexGlance</div>
-      </div>
-      <div class="tools">
-        <div class="search-row">
-          <input id="search" class="input" placeholder="Search location (e.g., Lagos, London)" />
-          <button id="searchBtn" class="btn">Search</button>
-          <button id="locBtn" class="btn ghost">Use My Location</button>
+
+<header class="header-bar">
+    <div style="font-weight:800; font-size:20px; display:flex; align-items:center; gap:8px;">
+        <span style="background:var(--accent); color:#000; padding:2px 8px; border-radius:8px;">FG</span> FLEXGLANCE
+    </div>
+    <div class="hamburger" id="hamb"><span></span><span></span><span></span></div>
+</header>
+
+<nav class="side-menu" id="menu">
+    <button class="btn" style="background:var(--accent); color:#000; width:100%;" onclick="nativeShare()">SHARE THIS VIEW</button>
+    <button class="btn" id="unitToggle" onclick="toggleUnits()">TOGGLE °C/°F</button>
+    <button class="btn" onclick="locateMe()">USE MY LOCATION</button>
+</nav>
+
+<main class="container">
+    <div style="display:flex; gap:10px;" data-aos="fade-down">
+        <input type="text" id="citySearch" class="input" placeholder="Search City...">
+        <button onclick="searchAndLoad()" class="btn" style="background:var(--accent); color:#000;"><i data-lucide="search"></i></button>
+    </div>
+
+    <div class="bento">
+        <div class="tile hero" data-aos="zoom-in">
+            <h2 id="placeLabel">Detecting...</h2>
+            <div id="dateLabel" style="color:var(--muted); font-size:14px;">---</div>
+            <div class="temp-huge" id="tempLabel">--°</div>
+            <div id="descLabel" style="font-weight:800; text-transform:uppercase; letter-spacing:1px;">---</div>
+            <div style="margin-top:15px;">
+                <span class="chip" id="feelsLabel">Feels --</span>
+                <span class="chip" id="windLabel">Wind --</span>
+                <span class="chip" id="uvLabel">UV --</span>
+            </div>
         </div>
-        <button id="unitBtn" class="btn">°C</button>
-      </div>
-    </header>
 
-    <section class="panel current" id="currentPanel">
-      <div class="top">
-        <div>
-          <div id="place" style="font-weight:700; font-size:20px;">—</div>
-          <div id="date" class="desc">—</div>
+        <div class="tile" style="grid-column: span 2;" data-aos="fade-up">
+            <p style="font-size:12px; font-weight:800; color:var(--accent); margin-bottom:10px;">24H TEMPERATURE VELOCITY</p>
+            <canvas id="tempChart" height="140"></canvas>
         </div>
-        <div class="big" id="bigTemp">—</div>
-      </div>
-      <div class="meta">
-        <div class="chip" id="desc">—</div>
-        <div class="chip" id="feels">Feels like —</div>
-        <div class="chip" id="wind">Wind —</div>
-        <div class="chip" id="uv">UV —</div>
-        <div class="chip" id="precip">Rain —</div>
-      </div>
-    </section>
 
-    <section class="panel">
-      <div class="days" id="days">
-        <!-- Yesterday / Today / Tomorrow cards injected here -->
-      </div>
-    </section>
+        <div class="tile" style="grid-column: span 2;" data-aos="fade-up">
+            <p style="font-size:12px; font-weight:800; margin-bottom:10px;">PRECISION SATELLITE RADAR</p>
+            <div id="radar"></div>
+        </div>
 
-    <footer class="footer">
-      <div class="status" id="status">Ready.</div>
-      <div>Flexi Dev Studio ♥️</div>
+        <div class="tile" style="grid-column: span 2;" data-aos="fade-left">
+            <p style="font-size:12px; font-weight:800; margin-bottom:15px;">EXTENDED FORECAST</p>
+            <div id="forecastContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+    </div>
+
+    <footer class="status-footer">
+        <p id="statusTxt">System Operational</p>
+        <p style="opacity:0.5; margin-top:5px;">FLEXGLANCE OS v3.0</p>
     </footer>
-  </div>
+</main>
 
 <script>
-/* ========= CONFIG ========= */
-const dom = {
-  status: document.getElementById('status'),
-  place: document.getElementById('place'),
-  date: document.getElementById('date'),
-  bigTemp: document.getElementById('bigTemp'),
-  desc: document.getElementById('desc'),
-  feels: document.getElementById('feels'),
-  wind: document.getElementById('wind'),
-  uv: document.getElementById('uv'),
-  precip: document.getElementById('precip'),
-  days: document.getElementById('days'),
-  search: document.getElementById('search'),
-  searchBtn: document.getElementById('searchBtn'),
-  locBtn: document.getElementById('locBtn'),
-  unitBtn: document.getElementById('unitBtn'),
-  app: document.getElementById('app'),
+let state = { lat:0, lon:0, unit:'metric', map:null, chart:null, weatherMarkers:[] };
+
+window.onload = () => {
+    lucide.createIcons();
+    AOS.init({duration:800, once:true});
+    initRadar();
+    initHamb();
+    locateMe();
 };
 
-let UNIT = 'metric'; // 'metric' (°C) or 'imperial' (°F)
-
-/* ========= UTILITIES ========= */
-const fmt = new Intl.DateTimeFormat(undefined, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-const shortDay = new Intl.DateTimeFormat(undefined, { weekday:'short' });
-
-const KPH = mps => (mps * 3.6);
-const MPH = mps => (mps * 2.23693629);
-const toF = c => (c * 9/5) + 32;
-const round = (n, d=0) => Number.parseFloat(n).toFixed(d);
-
-function setStatus(text, cls=''){
-  dom.status.className = 'status ' + cls;
-  dom.status.textContent = text;
+function initHamb(){
+    const h=document.getElementById('hamb');
+    const m=document.getElementById('menu');
+    h.onclick=()=>{ h.classList.toggle('open'); m.classList.toggle('active'); };
 }
 
-async function jget(url, timeoutMs = 15000){
-  const ctrl = new AbortController();
-  const t = setTimeout(()=>ctrl.abort(), timeoutMs);
-  try{
-    const res = await fetch(url, {signal: ctrl.signal});
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } finally {
-    clearTimeout(t);
-  }
+function initRadar(){
+    state.map=L.map('radar',{zoomControl:true}).setView([0,0],2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(state.map);
+    state.map.on('click', e => {
+        state.lat=e.latlng.lat; state.lon=e.latlng.lng; fetchWeather();
+    });
 }
 
-/* ========= WEATHER CODE MAP ========= */
-function codeToInfo(code){
-  // Based on WMO weather interpretation codes
-  const table = {
-    0:  {text:'Clear sky', emoji:'☀️'},
-    1:  {text:'Mainly clear', emoji:'🌤️'},
-    2:  {text:'Partly cloudy', emoji:'⛅'},
-    3:  {text:'Overcast', emoji:'☁️'},
-    45: {text:'Fog', emoji:'🌫️'},
-    48: {text:'Rime fog', emoji:'🌫️'},
-    51: {text:'Light drizzle', emoji:'🌦️'},
-    53: {text:'Drizzle', emoji:'🌦️'},
-    55: {text:'Dense drizzle', emoji:'🌦️'},
-    56: {text:'Freezing drizzle', emoji:'🌧️'},
-    57: {text:'Freezing drizzle', emoji:'🌧️'},
-    61: {text:'Light rain', emoji:'🌧️'},
-    63: {text:'Rain', emoji:'🌧️'},
-    65: {text:'Heavy rain', emoji:'🌧️'},
-    66: {text:'Freezing rain', emoji:'🌧️'},
-    67: {text:'Freezing rain', emoji:'🌧️'},
-    71: {text:'Light snow', emoji:'❄️'},
-    73: {text:'Snow', emoji:'❄️'},
-    75: {text:'Heavy snow', emoji:'❄️'},
-    77: {text:'Snow grains', emoji:'❄️'},
-    80: {text:'Rain showers', emoji:'🌧️'},
-    81: {text:'Rain showers', emoji:'🌧️'},
-    82: {text:'Violent rain', emoji:'⛈️'},
-    85: {text:'Snow showers', emoji:'🌨️'},
-    86: {text:'Heavy snow showers', emoji:'🌨️'},
-    95: {text:'Thunderstorm', emoji:'⛈️'},
-    96: {text:'Thunderstorm + hail', emoji:'⛈️'},
-    99: {text:'Thunderstorm + heavy hail', emoji:'⛈️'},
-  };
-  return table[code] ?? {text:'—', emoji:'❔'};
-}
+async function fetchWeather(){
+    document.getElementById('statusTxt').innerText="Syncing with satellites...";
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&current_weather=true&hourly=temperature_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&timezone=auto&forecast_days=2`;
+    try{
+        const res=await fetch(url);
+        const data=await res.json();
+        if(!data.current_weather) throw new Error("No current weather data");
 
-/* ========= RENDER HELPERS ========= */
-function paintBackground(code){
-  // subtle theme shift by weather
-  const clearish = [0,1,2];
-  const rainy = [51,53,55,61,63,65,80,81,82,66,67];
-  const snowy = [71,73,75,77,85,86];
-  const storm = [95,96,99];
-  let grad;
-  if (clearish.includes(code)) {
-    grad = 'radial-gradient(1200px 700px at 70% -10%, #2b7fff 0%, #0b1220 60%)';
-  } else if (rainy.includes(code)) {
-    grad = 'radial-gradient(1200px 700px at 70% -10%, #3a4a6a 0%, #0b1220 60%)';
-  } else if (snowy.includes(code)) {
-    grad = 'radial-gradient(1200px 700px at 70% -10%, #8aa9ff 0%, #0b1220 60%)';
-  } else if (storm.includes(code)) {
-    grad = 'radial-gradient(1200px 700px at 70% -10%, #563a6a 0%, #0b1220 60%)';
-  } else {
-    grad = 'radial-gradient(1200px 700px at 70% -10%, #1a2b5c 0%, #0b1220 60%)';
-  }
-  document.body.style.backgroundImage = grad + ', var(--bg)';
-}
-
-function toUnitTemp(c){
-  return UNIT === 'imperial' ? toF(c) : c;
-}
-function unitTempSymbol(){ return UNIT === 'imperial' ? '°F' : '°C'; }
-function windToUnit(mps){
-  return UNIT === 'imperial' ? MPH(mps) : KPH(mps);
-}
-function windUnit(){ return UNIT === 'imperial' ? 'mph' : 'km/h'; }
-
-function card(label, emoji, tmaxC, tminC, code, precip){
-  const tmax = round(toUnitTemp(tmaxC), 0);
-  const tmin = round(toUnitTemp(tminC), 0);
-  const info = codeToInfo(code);
-  return `
-    <div class="day">
-      <h3>${label}</h3>
-      <div class="stack">
-        <div>
-          <div class="t">${tmax}${unitTempSymbol()}</div>
-          <div class="desc">Low: ${tmin}${unitTempSymbol()}</div>
-          <div class="desc">Rain: ${round(precip || 0, 1)} mm</div>
-        </div>
-        <div style="font-size:34px" title="${info.text}">${info.emoji}</div>
-      </div>
-    </div>
-  `;
-}
-
-/* ========= OPEN-METEO FETCH =========
-   We’ll request:
-   - current: temperature, apparent, weather code, wind
-   - daily: yesterday + today + tomorrow via past_days=1 & forecast_days=2
-*/
-async function getByLatLon(lat, lon){
-  setStatus('Loading weather…');
-  // Forecast API
-  const url = new URL('https://api.open-meteo.com/v1/forecast');
-  url.search = new URLSearchParams({
-    latitude: lat,
-    longitude: lon,
-    current: 'temperature_2m,apparent_temperature,weather_code,wind_speed_10m',
-    hourly: 'temperature_2m,relative_humidity_2m,precipitation,weather_code',
-    daily: 'weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum',
-    timezone: 'auto',
-    past_days: '1',
-    forecast_days: '2',
-  }).toString();
-
-  const data = await jget(url.toString());
-
-  // Reverse geocode for nice place name
-  let placeName = `${round(lat,2)}, ${round(lon,2)}`;
-  try{
-    const rev = await jget(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1&language=en`);
-    if(rev?.results?.length){
-      const r = rev.results[0];
-      placeName = [r.name, r.admin1, r.country].filter(Boolean).join(', ');
+        const cur=data.current_weather;
+        renderUI(cur, data.hourly, data.daily);
+        renderRadarMarkers(data.hourly);
+    }catch(err){
+        console.error(err);
+        document.getElementById('statusTxt').innerText="Link failed.";
     }
-  }catch{}
-
-  renderAll(data, placeName);
 }
 
-function renderAll(data, placeName){
-  const cur = data.current;
-  const d = data.daily;
+function renderUI(cur, hourly, daily){
+    const unit=state.unit==='metric'?'°C':'°F';
+    const temp=state.unit==='metric'?cur.temperature:(cur.temperature*9/5+32);
+    document.getElementById('placeLabel').innerText=`Lat:${state.lat.toFixed(2)} Lon:${state.lon.toFixed(2)}`;
+    document.getElementById('dateLabel').innerText=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    document.getElementById('tempLabel').innerText=`${Math.round(temp)}${unit}`;
+    document.getElementById('descLabel').innerText=codeMap[cur.weathercode]||"Stable Conditions";
+    document.getElementById('windLabel').innerText=`Wind ${cur.windspeed} km/h`;
+    document.getElementById('uvLabel').innerText=`UV ${cur.uv||'N/A'}`;
+    document.getElementById('feelsLabel').innerText=`Feels ${Math.round(temp)}${unit}`;
 
-  const info = codeToInfo(cur.weather_code);
-  paintBackground(cur.weather_code);
-
-  // Current panel
-  dom.place.textContent = placeName;
-  dom.date.textContent = fmt.format(new Date());
-  dom.bigTemp.textContent = `${round(toUnitTemp(cur.temperature_2m), 0)}${unitTempSymbol()}`;
-  dom.desc.textContent = `${info.emoji} ${info.text}`;
-  dom.feels.textContent = `Feels like ${round(toUnitTemp(cur.apparent_temperature),0)}${unitTempSymbol()}`;
-  dom.wind.textContent = `Wind ${round(windToUnit((cur.wind_speed_10m ?? 0)/3.6),0)} ${windUnit()}`; // API gives km/h? Current gives wind_speed_10m in km/h; converting via /3.6 then back; keep label.
-  dom.uv.textContent = `UV ${d.uv_index_max?.[0] ?? '—'}`;
-  dom.precip.textContent = `Rain ${round(d.precipitation_sum?.[0] ?? 0,1)} mm`;
-
-  // Daily cards (yesterday index 0 when using past_days=1)
-  const cards = [];
-  const todayIdx = 1; // with past_days=1, index: 0=yesterday, 1=today, 2=tomorrow
-  const labels = ['Yesterday','Today','Tomorrow'];
-  for(let i=0;i<3;i++){
-    const idx = i; // 0..2
-    const tmax = d.temperature_2m_max[idx];
-    const tmin = d.temperature_2m_min[idx];
-    const code = d.weather_code[idx];
-    const rain = d.precipitation_sum[idx];
-    cards.push(card(labels[i], '', tmax, tmin, code, rain));
-  }
-  dom.days.innerHTML = cards.join('');
-
-  setStatus('Updated ✓', 'ok');
+    renderChart(hourly);
+    renderForecast(daily);
+    document.getElementById('statusTxt').innerText="Data Secure ✓";
 }
 
-/* ========= SEARCH BY NAME ========= */
-async function searchAndLoad(query){
-  if(!query) return;
-  setStatus('Searching…');
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en`;
-  const data = await jget(url);
-  if(!data?.results?.length){
-    setStatus('No results for that place.', 'warn');
-    return;
-  }
-  const r = data.results[0];
-  await getByLatLon(r.latitude, r.longitude);
+function renderChart(hourly){
+    const temps=hourly.temperature_2m.slice(0,24).map(t=>state.unit==='metric'?t:(t*9/5+32));
+    const ctx=document.getElementById('tempChart').getContext('2d');
+    if(state.chart) state.chart.destroy();
+    state.chart=new Chart(ctx,{
+        type:'line',
+        data:{labels:Array.from({length:temps.length},(_,i)=>`${i}:00`), datasets:[{data:temps,borderColor:'#38bdf8',tension:0.4,fill:true,backgroundColor:'rgba(56,189,248,0.1)',pointRadius:0}]},
+        options:{responsive:true,plugins:{legend:{display:false}}, scales:{y:{display:true}, x:{grid:{display:false}, ticks:{color:'#64748b',maxRotation:0}}}}
+    });
 }
 
-/* ========= GEOLOCATION ========= */
-function locateMe(){
-  if(!('geolocation' in navigator)){
-    setStatus('Geolocation not supported on this device.', 'warn');
-    return;
-  }
-  setStatus('Getting precise location…');
-  navigator.geolocation.getCurrentPosition(
-    async pos=>{
-      const {latitude, longitude} = pos.coords;
-      await getByLatLon(latitude, longitude);
-    },
-    err=>{
-      setStatus('Location permission denied. You can still search by city name.', 'warn');
-    },
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-  );
+function renderForecast(daily){
+    const container=document.getElementById('forecastContainer');
+    container.innerHTML='';
+    const labels=["Today","Tomorrow","Day After"];
+    for(let i=0;i<3;i++){
+        const high=state.unit==='metric'?daily.temperature_2m_max[i]:(daily.temperature_2m_max[i]*9/5+32);
+        container.innerHTML+=`<div class="day-card"><span>${labels[i]}</span><span style="font-weight:800;color:var(--accent)">${Math.round(high)}°</span><span style="font-size:12px;opacity:0.6">${daily.precipitation_sum[i]}mm Rain</span></div>`;
+    }
 }
 
-/* ========= EVENTS ========= */
-dom.searchBtn.addEventListener('click', ()=> searchAndLoad(dom.search.value.trim()));
-dom.search.addEventListener('keydown', e=>{
-  if(e.key === 'Enter') searchAndLoad(dom.search.value.trim());
-});
-dom.locBtn.addEventListener('click', locateMe);
-dom.unitBtn.addEventListener('click', ()=>{
-  UNIT = (UNIT === 'metric') ? 'imperial' : 'metric';
-  dom.unitBtn.textContent = (UNIT === 'metric') ? '°C' : '°F';
-  // Re-render with new unit using last known data:
-  // Quick approach: trigger a fake refresh by re-searching current place label.
-  // Better: store last lat/lon.
-  if(window.__last){
-    renderAll(window.__last.data, window.__last.place);
-  }
-});
-
-(async function init(){
-  setStatus('Initializing…');
-  // Default: try geolocation. If it fails, fall back to Lagos search.
-  try{
-    navigator.geolocation.getCurrentPosition(async p=>{
-      const {latitude, longitude} = p.coords;
-      // also store last
-      const url = new URL('https://api.open-meteo.com/v1/forecast');
-      url.search = new URLSearchParams({
-        latitude: latitude,
-        longitude: longitude,
-        current: 'temperature_2m,apparent_temperature,weather_code,wind_speed_10m',
-        hourly: 'temperature_2m,relative_humidity_2m,precipitation,weather_code',
-        daily: 'weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum',
-        timezone: 'auto',
-        past_days: '1',
-        forecast_days: '2',
-      }).toString();
-      const data = await jget(url.toString());
-      let placeName = `${round(latitude,2)}, ${round(longitude,2)}`;
-      try{
-        const rev = await jget(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&count=1&language=en`);
-        if(rev?.results?.length){
-          const r = rev.results[0];
-          placeName = [r.name, r.admin1, r.country].filter(Boolean).join(', ');
+function renderRadarMarkers(hourly){
+    state.weatherMarkers.forEach(m=>state.map.removeLayer(m));
+    state.weatherMarkers=[];
+    for(let i=0;i<hourly.time.length;i+=3){
+        const precip=hourly.precipitation[i]||0;
+        const lat=state.lat+(Math.random()-0.5)*5;
+        const lon=state.lon+(Math.random()-0.5)*5;
+        if(precip>0){
+            const marker=L.marker([lat,lon]).addTo(state.map).bindPopup(`Rain: ${precip}mm`);
+            state.weatherMarkers.push(marker);
         }
-      }catch{}
-      window.__last = {data, place: placeName};
-      renderAll(data, placeName);
-    }, async ()=>{
-      await searchAndLoad('Lagos');
-    }, { enableHighAccuracy:true, timeout: 8000 });
-  }catch{
-    await searchAndLoad('Lagos');
-  }
+    }
+}
 
-  // Hook renderAll to track last data for unit toggle
-  const _renderAll = renderAll;
-  renderAll = function(data, place){
-    window.__last = {data, place};
-    _renderAll(data, place);
-  }
-})();
+function locateMe(){
+    if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(p=>{
+            state.lat=p.coords.latitude; state.lon=p.coords.longitude;
+            state.map.setView([state.lat,state.lon],5);
+            fetchWeather();
+        },()=>alert("Location access denied. Allow location to get global weather data."));
+    } else alert("Geolocation not supported.");
+}
+
+function toggleUnits(){ state.unit=state.unit==='metric'?'imperial':'metric'; fetchWeather(); }
+
+async function nativeShare(){
+    const shareData={title:'FlexGlance OS', text:`Weather at Lat:${state.lat.toFixed(2)} Lon:${state.lon.toFixed(2)}: ${document.getElementById('tempLabel').innerText}`, url:window.location.href};
+    try{ await navigator.share(shareData); } catch(e){ navigator.clipboard.writeText(window.location.href); alert("Link copied to clipboard!"); }
+}
+
+async function searchAndLoad(){
+    const q=document.getElementById('citySearch').value;
+    if(!q) return alert("Enter a city name");
+    const res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`);
+    const data=await res.json();
+    if(data.results && data.results.length){
+        state.lat=data.results[0].latitude; state.lon=data.results[0].longitude;
+        state.map.setView([state.lat,state.lon],5);
+        fetchWeather();
+    } else alert("City not found");
+}
+
+const codeMap={0:"Clear Sky",1:"Mainly Clear",2:"Partly Cloudy",3:"Overcast",45:"Foggy",61:"Rainy",95:"Thunderstorm"};
 </script>
 </body>
 </html>

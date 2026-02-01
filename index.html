@@ -1,263 +1,657 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<title>FlexGlance | Live Weather Intelligence</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlexGlance 2.0 | Live Weather Intelligence</title>
 <meta name="description" content="FlexGlance is a weather app providing real-time updates on temperature, wind, UV index, and rain forecasts with a clean, responsive design.">
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
 
 <meta property="og:type" content="website">
-<meta property="og:title" content="FlexGlance OS — Command Center">
+<meta property="og:title" content="FlexGlance — Command Center">
 <meta property="og:description" content="Check the live 24h trend and atmospheric data for your location.">
 <meta property="og:image" content="https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?w=1200">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=JetBrains+Mono&family=Inter:wght@100;400;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/umd/lucide.min.js"></script>
-<script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <style>
+        :root {
+            --bg: #020617;
+            --accent: #22d3ee;
+            --accent-glow: rgba(34, 211, 238, 0.4);
+            --secondary: #818cf8;
+            --danger: #f43f5e;
+            --warning: #fbbf24;
+            --success: #10b981;
+            --surface: rgba(15, 23, 42, 0.6);
+            --surface-thick: rgba(15, 23, 42, 0.9);
+            --border: rgba(255, 255, 255, 0.08);
+            --text-high: #f8fafc;
+            --text-low: #94a3b8;
+            --radius-xl: 40px;
+            --radius-lg: 24px;
+            --font-mono: 'JetBrains Mono', monospace;
+            --sidebar-width: 110px;
+            --panel-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
 
-<style>
-:root {
-    --bg: #050810;
-    --card: rgba(15, 23, 42, 0.8);
-    --card-strong: rgba(255, 255, 255, 0.12);
-    --accent: #38bdf8;
-    --border: rgba(255, 255, 255, 0.08);
-    --text: #f8fafc;
-    --muted: #b8c2df;
-    --radius: 24px;
-}
+        /* -------------------------------------------------------------------------- */
+        /* BASE & SCROLLBAR                                                           */
+        /* -------------------------------------------------------------------------- */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-body {
-    font-family:'Plus Jakarta Sans',sans-serif;
-    background: radial-gradient(1200px 700px at 70% -10%, #1a2b5c 0%, #0b1220 60%), var(--bg);
-    color: var(--text);
-    min-height:100vh;
-    overflow-x:hidden;
-}
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing: antialiased; }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text-high);
+            overflow: hidden;
+            height: 100vh;
+        }
 
-.header-bar {
-    position:fixed; top:0; width:100%; height:70px;
-    display:flex; justify-content:space-between; align-items:center;
-    padding:0 20px; background: rgba(5,8,16,0.9);
-    backdrop-filter: blur(15px); z-index:2000; border-bottom:1px solid var(--border);
-}
-.hamburger { width:30px; height:20px; display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; z-index:3000; }
-.hamburger span { width:100%; height:3px; background:var(--text); border-radius:10px; transition:0.4s; }
-.hamburger.open span:nth-child(1){ transform: translateY(8.5px) rotate(45deg); }
-.hamburger.open span:nth-child(2){ opacity:0; }
-.hamburger.open span:nth-child(3){ transform: translateY(-8.5px) rotate(-45deg); }
+        #ambient-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; opacity: 0.5; pointer-events: none;
+        }
 
-.side-menu {
-    position:fixed; top:0; right:-100%; width:80%; height:100%;
-    background: var(--bg); z-index:2500; transition:0.5s cubic-bezier(0.4,0,0.2,1);
-    display:flex; flex-direction:column; padding:100px 40px; gap:30px;
-    border-left:1px solid var(--border);
-}
-.side-menu.active { right:0; }
+        /* -------------------------------------------------------------------------- */
+        /* NOTIFICATION ENGINE                                                        */
+        /* -------------------------------------------------------------------------- */
+        #notif-container { position: fixed; top: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 12px; }
+        .toast { 
+            background: var(--surface-thick); border: 1px solid var(--border);
+            padding: 18px 28px; border-radius: 20px; backdrop-filter: blur(30px);
+            color: white; display: flex; align-items: center; gap: 15px; 
+            animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            box-shadow: var(--panel-shadow); min-width: 320px;
+        }
+        .toast-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(34, 211, 238, 0.1); color: var(--accent); }
 
-.container { padding:90px 20px 40px; max-width:1100px; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
-.bento { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; }
-@media(min-width:768px){ .bento{ grid-template-columns:repeat(4,1fr); } }
+        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-.tile { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; backdrop-filter:blur(10px); }
-.hero { grid-column: span 2; text-align:left; position:relative; }
-.temp-huge { font-size:clamp(60px,10vw,90px); font-weight:800; letter-spacing:-4px; color:var(--accent); margin:10px 0; }
+        /* -------------------------------------------------------------------------- */
+        /* OS LAYOUT                                                                  */
+        /* -------------------------------------------------------------------------- */
+        .os-container {
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr;
+            height: 100vh;
+            background: radial-gradient(circle at 0% 0%, #1e293b 0%, #020617 100%);
+        }
 
-.btn { border:none; background:var(--card-strong); color:var(--text); padding:12px 18px; border-radius:12px; cursor:pointer; font-weight:600; }
-.input { flex:1; background:var(--card); border:1px solid var(--border); color:white; padding:15px; border-radius:15px; outline:none; }
-#radar { height:300px; border-radius:20px; margin-top:15px; z-index:1; }
-.chip { background:var(--card-strong); padding:8px 12px; border-radius:999px; font-size:13px; display:inline-block; margin:4px; }
-.day-card { background:var(--card); padding:15px; border-radius:18px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border); }
-.status-footer { text-align:center; color:var(--muted); font-size:12px; margin-top:20px; }
-</style>
+        .os-sidebar {
+            background: rgba(15, 23, 42, 0.4);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; align-items: center;
+            padding: 40px 0; backdrop-filter: blur(50px); z-index: 100;
+        }
+
+        .os-logo {
+            width: 60px; height: 60px; background: var(--accent);
+            border-radius: 22px; margin-bottom: 60px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 50px var(--accent-glow); color: #000;
+            cursor: pointer; transition: 0.5s;
+        }
+        .os-logo:hover { transform: scale(1.1) rotate(90deg); border-radius: 12px; }
+
+        .nav-group { display: flex; flex-direction: column; gap: 25px; }
+        
+        .nav-item {
+            width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;
+            border-radius: 24px; cursor: pointer; color: var(--text-low);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .nav-item:hover { color: var(--accent); background: rgba(34, 211, 238, 0.05); }
+        .nav-item.active { 
+            color: var(--accent); background: rgba(34, 211, 238, 0.15); 
+            box-shadow: inset 0 0 20px rgba(34, 211, 238, 0.1);
+        }
+        .nav-item.active::before {
+            content: ''; position: absolute; left: -10px; width: 6px; height: 30px;
+            background: var(--accent); border-radius: 0 10px 10px 0; box-shadow: 0 0 20px var(--accent);
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* VIEWPORT & DASHBOARD                                                       */
+        /* -------------------------------------------------------------------------- */
+        .os-viewport {
+            padding: 50px 70px; overflow-y: auto; position: relative;
+            scroll-behavior: smooth;
+        }
+
+        .section-header {
+            margin-bottom: 50px; display: flex; justify-content: space-between; align-items: flex-end;
+        }
+
+        .glance-title { font-size: 72px; font-weight: 800; letter-spacing: -4px; line-height: 0.9; }
+        .sub-header { font-family: var(--font-mono); color: var(--accent); font-size: 14px; margin-top: 15px; opacity: 0.8; }
+
+        .quantum-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-auto-rows: minmax(180px, auto);
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .os-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            backdrop-filter: blur(25px);
+            transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .os-card:hover { border-color: rgba(34, 211, 238, 0.4); transform: translateY(-8px) scale(1.01); background: rgba(15, 23, 42, 0.8); }
+
+        /* -------------------------------------------------------------------------- */
+        /* WEATHER MODULES                                                            */
+        /* -------------------------------------------------------------------------- */
+        .main-temp { font-size: 130px; font-weight: 900; letter-spacing: -8px; margin: 20px 0; line-height: 1; font-family: 'Inter', sans-serif; }
+        
+        .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-top: 20px; }
+        .f-item { 
+            background: rgba(255,255,255,0.02); padding: 25px 15px; border-radius: 24px; text-align: center;
+            border: 1px solid transparent; transition: 0.3s;
+        }
+        .f-item:hover { border-color: var(--border); background: rgba(255,255,255,0.05); transform: scale(1.05); }
+
+        .search-container { position: relative; width: 450px; }
+        .search-bar {
+            width: 100%; background: var(--surface-thick); border: 1px solid var(--border);
+            padding: 18px 25px 18px 60px; border-radius: 100px; color: #fff;
+            font-size: 16px; outline: none; transition: 0.4s;
+        }
+        .search-bar:focus { border-color: var(--accent); box-shadow: 0 0 40px rgba(34, 211, 238, 0.2); width: 110%; }
+
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--success); display: inline-block; margin-right: 10px; box-shadow: 0 0 15px var(--success); }
+
+        /* -------------------------------------------------------------------------- */
+        /* TERMINAL LOG                                                               */
+        /* -------------------------------------------------------------------------- */
+        #logConsole {
+            font-family: var(--font-mono); font-size: 12px; color: #a5f3fc;
+            background: rgba(0,0,0,0.4); padding: 20px; border-radius: 15px;
+            height: 400px; overflow-y: auto; border: 1px solid var(--border);
+        }
+        .log-entry { margin-bottom: 8px; border-left: 2px solid var(--accent); padding-left: 10px; }
+
+        /* -------------------------------------------------------------------------- */
+        /* SETTINGS MODAL                                                             */
+        /* -------------------------------------------------------------------------- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            backdrop-filter: blur(15px); z-index: 1000; display: none;
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: var(--surface-thick); border: 1px solid var(--border);
+            width: 600px; border-radius: 35px; padding: 50px;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* UTILS                                                                      */
+        /* -------------------------------------------------------------------------- */
+        .text-low { color: var(--text-low); font-size: 13px; text-transform: uppercase; letter-spacing: 2px; font-weight: 500; }
+        .active-glow { color: var(--accent); text-shadow: 0 0 15px var(--accent-glow); }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 900; background: var(--accent); color: #000; margin-left: 10px; }
+    </style>
 </head>
 <body>
 
-<header class="header-bar">
-    <div style="font-weight:800; font-size:20px; display:flex; align-items:center; gap:8px;">
-        <span style="background:var(--accent); color:#000; padding:2px 8px; border-radius:8px;">FG</span> FLEXGLANCE
-    </div>
-    <div class="hamburger" id="hamb"><span></span><span></span><span></span></div>
-</header>
+<div id="notif-container"></div>
+<canvas id="ambient-canvas"></canvas>
 
-<nav class="side-menu" id="menu">
-    <button class="btn" style="background:var(--accent); color:#000; width:100%;" onclick="nativeShare()">SHARE THIS VIEW</button>
-    <button class="btn" id="unitToggle" onclick="toggleUnits()">TOGGLE °C/°F</button>
-    <button class="btn" onclick="locateMe()">USE MY LOCATION</button>
-</nav>
-
-<main class="container">
-    <div style="display:flex; gap:10px;" data-aos="fade-down">
-        <input type="text" id="citySearch" class="input" placeholder="Search City...">
-        <button onclick="searchAndLoad()" class="btn" style="background:var(--accent); color:#000;"><i data-lucide="search"></i></button>
-    </div>
-
-    <div class="bento">
-        <div class="tile hero" data-aos="zoom-in">
-            <h2 id="placeLabel">Detecting...</h2>
-            <div id="dateLabel" style="color:var(--muted); font-size:14px;">---</div>
-            <div class="temp-huge" id="tempLabel">--°</div>
-            <div id="descLabel" style="font-weight:800; text-transform:uppercase; letter-spacing:1px;">---</div>
-            <div style="margin-top:15px;">
-                <span class="chip" id="feelsLabel">Feels --</span>
-                <span class="chip" id="windLabel">Wind --</span>
-                <span class="chip" id="uvLabel">UV --</span>
+<div class="modal-overlay" id="sysModal">
+    <div class="modal-content">
+        <h2 style="font-size: 32px; margin-bottom: 30px;">Core Config</h2>
+        <div style="display:flex; flex-direction:column; gap:30px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h4>Neural Particle Engine</h4>
+                    <p class="text-low" style="text-transform:none">Toggle GPU-accelerated background</p>
+                </div>
+                <div class="switch" onclick="this.classList.toggle('on'); state.particles = !state.particles;"></div>
             </div>
-        </div>
-
-        <div class="tile" style="grid-column: span 2;" data-aos="fade-up">
-            <p style="font-size:12px; font-weight:800; color:var(--accent); margin-bottom:10px;">24H TEMPERATURE VELOCITY</p>
-            <canvas id="tempChart" height="140"></canvas>
-        </div>
-
-        <div class="tile" style="grid-column: span 2;" data-aos="fade-up">
-            <p style="font-size:12px; font-weight:800; margin-bottom:10px;">PRECISION SATELLITE RADAR</p>
-            <div id="radar"></div>
-        </div>
-
-        <div class="tile" style="grid-column: span 2;" data-aos="fade-left">
-            <p style="font-size:12px; font-weight:800; margin-bottom:15px;">EXTENDED FORECAST</p>
-            <div id="forecastContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h4>Telemetry Units</h4>
+                    <p class="text-low" style="text-transform:none">Toggle Celsius / Fahrenheit</p>
+                </div>
+                <button class="nav-item" onclick="toggleUnits()" style="width:auto; padding:0 20px; height:45px;">SWITCH</button>
+            </div>
+            <button onclick="closeModal()" style="background:var(--accent); color:#000; padding:20px; border-radius:15px; border:none; font-weight:bold; cursor:pointer;">RE-INITIALIZE KERNEL</button>
         </div>
     </div>
+</div>
 
-    <footer class="status-footer">
-        <p id="statusTxt">System Operational</p>
-        <p style="opacity:0.5; margin-top:5px;">FLEXGLANCE OS v3.0</p>
-    </footer>
-</main>
+<div class="os-container">
+    <aside class="os-sidebar">
+        <div class="os-logo" onclick="requestGeoLocation()"><i data-lucide="map-pin"></i></div>
+        <nav class="nav-group">
+            <div class="nav-item active" id="nav-dash" onclick="switchScreen('dash')"><i data-lucide="layout-grid"></i></div>
+            <div class="nav-item" id="nav-map" onclick="switchScreen('map')"><i data-lucide="globe"></i></div>
+            <div class="nav-item" id="nav-logs" onclick="switchScreen('logs')"><i data-lucide="cpu"></i></div>
+        </nav>
+        <div style="flex:1"></div>
+        <div class="nav-item" onclick="openModal()"><i data-lucide="sliders"></i></div>
+        <div class="nav-item" onclick="location.reload()"><i data-lucide="power"></i></div>
+    </aside>
+
+    <main class="os-viewport">
+        <header class="section-header">
+            <div class="search-container">
+                <i data-lucide="search" style="position:absolute; left:25px; top:20px; color:var(--text-low); width:20px;"></i>
+                <input type="text" id="globalSearch" class="search-bar" placeholder="Enter Coordinates or City Name...">
+            </div>
+            <div style="text-align:right">
+                <div style="font-family:var(--font-mono); font-size:24px; font-weight:700;" id="digitalClock">00:00:00</div>
+                <div class="sub-header"><span class="status-dot"></span>QUANTUM LINK: SECURE</div>
+            </div>
+        </header>
+
+        <section id="scr-dash" class="os-screen">
+            <div class="section-header" style="margin-bottom:30px;">
+                <div>
+                    <h1 class="glance-title" id="displayCity">Syncing Location...</h1>
+                    <div class="sub-header">STATION ID: <span id="stationID">0000-0000</span> | VERSION 6.0.4</div>
+                </div>
+            </div>
+
+            <div class="quantum-grid">
+                <div class="os-card" style="grid-column: span 4; grid-row: span 3;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <p class="text-low">Current Thermal State <span class="badge">LIVE</span></p>
+                            <div class="main-temp" id="tempMain">--°</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <i id="weatherIcon" data-lucide="sun" style="width:80px; height:80px; color:var(--accent)"></i>
+                            <h2 id="weatherCond" style="margin-top:10px; text-transform:uppercase;">Scanning...</h2>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top:50px; display:grid; grid-template-columns: repeat(3, 1fr); gap:40px;">
+                        <div>
+                            <p class="text-low">Humidity</p>
+                            <h3 id="humDisplay" style="font-size:28px;">--%</h3>
+                            <div style="height:4px; background:rgba(255,255,255,0.1); margin-top:10px; border-radius:2px;">
+                                <div id="humBar" style="height:100%; background:var(--accent); width:0%; transition:1s;"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-low">Wind Flow</p>
+                            <h3 id="windDisplay" style="font-size:28px;">-- km/h</h3>
+                            <p id="windDeg" style="font-size:12px; opacity:0.6;">Direction: --</p>
+                        </div>
+                        <div>
+                            <p class="text-low">Pressure</p>
+                            <h3 id="pressDisplay" style="font-size:28px;">-- hPa</h3>
+                            <p style="font-size:12px; opacity:0.6;">Barometric Stable</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="os-card" style="grid-column: span 2; grid-row: span 2;">
+                    <h3 style="margin-bottom:20px;">Atmospheric Shielding</h3>
+                    <div style="height:150px; display:flex; align-items:center; justify-content:center;">
+                        <div id="uvCircle" style="width:120px; height:120px; border-radius:50%; border:8px solid var(--accent); display:flex; align-items:center; justify-content:center; flex-direction:column;">
+                            <span id="uvVal" style="font-size:32px; font-weight:bold;">0</span>
+                            <span style="font-size:10px;">UV INDEX</span>
+                        </div>
+                    </div>
+                    <p id="uvAdvice" class="text-low" style="text-align:center; margin-top:15px; font-size:11px;">Data Pending...</p>
+                </div>
+
+                <div class="os-card" style="grid-column: span 2;">
+                    <p class="text-low">Visibility</p>
+                    <h2 id="visDisplay" style="font-size:32px; margin-top:10px;">-- km</h2>
+                </div>
+
+                <div class="os-card" style="grid-column: span 6; grid-row: span 2;">
+                    <p class="text-low" style="margin-bottom:20px;">Core Temperature Variance (Next 24 Hours)</p>
+                    <div style="height:250px;">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="os-card" style="grid-column: span 6;">
+                    <p class="text-low">Extended Satellite Forecast</p>
+                    <div class="forecast-grid" id="forecastContainer"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="scr-map" class="os-screen" style="display:none;">
+            <div class="os-card" id="mapView" style="height:700px; padding:0; border-radius:30px; overflow:hidden;"></div>
+        </section>
+
+        <section id="scr-logs" class="os-screen" style="display:none;">
+            <div class="os-card">
+                <h2 style="margin-bottom:20px;">System Kernel Logs</h2>
+                <div id="logConsole"></div>
+            </div>
+        </section>
+    </main>
+</div>
 
 <script>
-let state = { lat:0, lon:0, unit:'metric', map:null, chart:null, weatherMarkers:[] };
+    /* -------------------------------------------------------------------------- */
+    /* OS STATE ENGINE                                                            */
+    /* -------------------------------------------------------------------------- */
+    const state = {
+        city: "Detecting...",
+        lat: 0,
+        lon: 0,
+        units: 'metric',
+        particles: true,
+        chart: null,
+        map: null,
+        mapMarker: null
+    };
 
-window.onload = () => {
-    lucide.createIcons();
-    AOS.init({duration:800, once:true});
-    initRadar();
-    initHamb();
-    locateMe();
-};
-
-function initHamb(){
-    const h=document.getElementById('hamb');
-    const m=document.getElementById('menu');
-    h.onclick=()=>{ h.classList.toggle('open'); m.classList.toggle('active'); };
-}
-
-function initRadar(){
-    state.map=L.map('radar',{zoomControl:true}).setView([0,0],2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(state.map);
-    state.map.on('click', e => {
-        state.lat=e.latlng.lat; state.lon=e.latlng.lng; fetchWeather();
+    /* -------------------------------------------------------------------------- */
+    /* INITIALIZATION                                                             */
+    /* -------------------------------------------------------------------------- */
+    document.addEventListener('DOMContentLoaded', () => {
+        lucide.createIcons();
+        initClock();
+        initParticles();
+        initMap();
+        requestGeoLocation(); // Start with real GPS, not London
+        setupSearch();
+        AOS.init();
+        
+        logSystem("FlexGlance Quantum OS v6.0 Booted Successfully.");
+        logSystem("Initializing Neural Network Handshake...");
     });
-}
 
-async function fetchWeather(){
-    document.getElementById('statusTxt').innerText="Syncing with satellites...";
-    const url=`https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&current_weather=true&hourly=temperature_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&timezone=auto&forecast_days=2`;
-    try{
-        const res=await fetch(url);
-        const data=await res.json();
-        if(!data.current_weather) throw new Error("No current weather data");
-
-        const cur=data.current_weather;
-        renderUI(cur, data.hourly, data.daily);
-        renderRadarMarkers(data.hourly);
-    }catch(err){
-        console.error(err);
-        document.getElementById('statusTxt').innerText="Link failed.";
+    function logSystem(msg) {
+        const logger = document.getElementById('logConsole');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `[${new Date().toLocaleTimeString()}] > ${msg}`;
+        logger.prepend(entry);
     }
-}
 
-function renderUI(cur, hourly, daily){
-    const unit=state.unit==='metric'?'°C':'°F';
-    const temp=state.unit==='metric'?cur.temperature:(cur.temperature*9/5+32);
-    document.getElementById('placeLabel').innerText=`Lat:${state.lat.toFixed(2)} Lon:${state.lon.toFixed(2)}`;
-    document.getElementById('dateLabel').innerText=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-    document.getElementById('tempLabel').innerText=`${Math.round(temp)}${unit}`;
-    document.getElementById('descLabel').innerText=codeMap[cur.weathercode]||"Stable Conditions";
-    document.getElementById('windLabel').innerText=`Wind ${cur.windspeed} km/h`;
-    document.getElementById('uvLabel').innerText=`UV ${cur.uv||'N/A'}`;
-    document.getElementById('feelsLabel').innerText=`Feels ${Math.round(temp)}${unit}`;
-
-    renderChart(hourly);
-    renderForecast(daily);
-    document.getElementById('statusTxt').innerText="Data Secure ✓";
-}
-
-function renderChart(hourly){
-    const temps=hourly.temperature_2m.slice(0,24).map(t=>state.unit==='metric'?t:(t*9/5+32));
-    const ctx=document.getElementById('tempChart').getContext('2d');
-    if(state.chart) state.chart.destroy();
-    state.chart=new Chart(ctx,{
-        type:'line',
-        data:{labels:Array.from({length:temps.length},(_,i)=>`${i}:00`), datasets:[{data:temps,borderColor:'#38bdf8',tension:0.4,fill:true,backgroundColor:'rgba(56,189,248,0.1)',pointRadius:0}]},
-        options:{responsive:true,plugins:{legend:{display:false}}, scales:{y:{display:true}, x:{grid:{display:false}, ticks:{color:'#64748b',maxRotation:0}}}}
-    });
-}
-
-function renderForecast(daily){
-    const container=document.getElementById('forecastContainer');
-    container.innerHTML='';
-    const labels=["Today","Tomorrow","Day After"];
-    for(let i=0;i<3;i++){
-        const high=state.unit==='metric'?daily.temperature_2m_max[i]:(daily.temperature_2m_max[i]*9/5+32);
-        container.innerHTML+=`<div class="day-card"><span>${labels[i]}</span><span style="font-weight:800;color:var(--accent)">${Math.round(high)}°</span><span style="font-size:12px;opacity:0.6">${daily.precipitation_sum[i]}mm Rain</span></div>`;
-    }
-}
-
-function renderRadarMarkers(hourly){
-    state.weatherMarkers.forEach(m=>state.map.removeLayer(m));
-    state.weatherMarkers=[];
-    for(let i=0;i<hourly.time.length;i+=3){
-        const precip=hourly.precipitation[i]||0;
-        const lat=state.lat+(Math.random()-0.5)*5;
-        const lon=state.lon+(Math.random()-0.5)*5;
-        if(precip>0){
-            const marker=L.marker([lat,lon]).addTo(state.map).bindPopup(`Rain: ${precip}mm`);
-            state.weatherMarkers.push(marker);
+    /* -------------------------------------------------------------------------- */
+    /* GEOLOCATION SYSTEM                                                         */
+    /* -------------------------------------------------------------------------- */
+    function requestGeoLocation() {
+        notify("GPS", "Requesting orbital positioning access...");
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                state.lat = position.coords.latitude;
+                state.lon = position.coords.longitude;
+                
+                logSystem(`Coordinate Lock: ${state.lat.toFixed(4)}, ${state.lon.toFixed(4)}`);
+                
+                // Use OpenStreetMap for Reverse Geocoding (Lat/Lon -> City Name)
+                try {
+                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${state.lat}&lon=${state.lon}&format=json`);
+                    const geoData = await geoRes.json();
+                    state.city = geoData.address.city || geoData.address.town || geoData.address.village || "Unknown Sector";
+                    
+                    document.getElementById('displayCity').innerText = state.city;
+                    fetchTelemetry();
+                    notify("Success", `Located: ${state.city}`);
+                } catch (e) {
+                    state.city = "Local Node";
+                    fetchTelemetry();
+                }
+            }, (err) => {
+                logSystem("GPS Error: Access Denied by User. Defaulting to Central Hub.");
+                notify("GPS Denied", "Using fallback location (New York).", "warning");
+                state.lat = 40.7128; state.lon = -74.0060; state.city = "New York";
+                fetchTelemetry();
+            });
         }
     }
-}
 
-function locateMe(){
-    if(navigator.geolocation){
-        navigator.geolocation.getCurrentPosition(p=>{
-            state.lat=p.coords.latitude; state.lon=p.coords.longitude;
-            state.map.setView([state.lat,state.lon],5);
-            fetchWeather();
-        },()=>alert("Location access denied. Allow location to get global weather data."));
-    } else alert("Geolocation not supported.");
-}
+    /* -------------------------------------------------------------------------- */
+    /* DATA FETCHING                                                              */
+    /* -------------------------------------------------------------------------- */
+    async function fetchTelemetry() {
+        logSystem(`Initiating Satellite Link for ${state.city}...`);
+        
+        const weatherURL = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m,surface_pressure,uv_index,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
 
-function toggleUnits(){ state.unit=state.unit==='metric'?'imperial':'metric'; fetchWeather(); }
+        try {
+            const response = await fetch(weatherURL);
+            const data = await response.json();
+            
+            updateDashboard(data);
+            updateChart(data.hourly);
+            updateMap();
+            logSystem("Data Stream Synchronized.");
+        } catch (error) {
+            logSystem("Error: Satellite Link Severed.");
+            notify("Link Error", "Failed to sync with Open-Meteo API.", "danger");
+        }
+    }
 
-async function nativeShare(){
-    const shareData={title:'FlexGlance OS', text:`Weather at Lat:${state.lat.toFixed(2)} Lon:${state.lon.toFixed(2)}: ${document.getElementById('tempLabel').innerText}`, url:window.location.href};
-    try{ await navigator.share(shareData); } catch(e){ navigator.clipboard.writeText(window.location.href); alert("Link copied to clipboard!"); }
-}
+    function updateDashboard(data) {
+        const cur = data.current_weather;
+        const info = getWeatherInfo(cur.weathercode);
 
-async function searchAndLoad(){
-    const q=document.getElementById('citySearch').value;
-    if(!q) return alert("Enter a city name");
-    const res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`);
-    const data=await res.json();
-    if(data.results && data.results.length){
-        state.lat=data.results[0].latitude; state.lon=data.results[0].longitude;
-        state.map.setView([state.lat,state.lon],5);
-        fetchWeather();
-    } else alert("City not found");
-}
+        // Update Text
+        document.getElementById('tempMain').innerText = Math.round(cur.temperature) + '°';
+        document.getElementById('weatherCond').innerText = info.label;
+        document.getElementById('humDisplay').innerText = data.hourly.relativehumidity_2m[0] + '%';
+        document.getElementById('humBar').style.width = data.hourly.relativehumidity_2m[0] + '%';
+        document.getElementById('windDisplay').innerText = cur.windspeed + ' km/h';
+        document.getElementById('windDeg').innerText = `Bearing: ${cur.winddirection}°`;
+        document.getElementById('pressDisplay').innerText = data.hourly.surface_pressure[0] + ' hPa';
+        document.getElementById('visDisplay').innerText = (data.hourly.visibility[0] / 1000).toFixed(1) + ' km';
+        document.getElementById('stationID').innerText = `QN-${Math.floor(1000 + Math.random() * 9000)}-${state.city.substring(0,3).toUpperCase()}`;
 
-const codeMap={0:"Clear Sky",1:"Mainly Clear",2:"Partly Cloudy",3:"Overcast",45:"Foggy",61:"Rainy",95:"Thunderstorm"};
+        // UV Index
+        const uv = data.hourly.uv_index[0];
+        document.getElementById('uvVal').innerText = uv;
+        let uvColor = "var(--success)";
+        if(uv > 5) uvColor = "var(--warning)";
+        if(uv > 8) uvColor = "var(--danger)";
+        document.getElementById('uvCircle').style.borderColor = uvColor;
+        document.getElementById('uvAdvice').innerText = uv > 5 ? "High radiation: Use shielding." : "Optimal atmospheric levels.";
+
+        // Icon update
+        const iconContainer = document.getElementById('weatherIcon');
+        iconContainer.setAttribute('data-lucide', info.icon);
+        
+        // Forecast
+        const fContainer = document.getElementById('forecastContainer');
+        fContainer.innerHTML = '';
+        for(let i=1; i<=5; i++) {
+            const dInfo = getWeatherInfo(data.daily.weathercode[i]);
+            fContainer.innerHTML += `
+                <div class="f-item">
+                    <p class="text-low" style="font-size:10px;">Day +${i}</p>
+                    <i data-lucide="${dInfo.icon}" style="margin:15px 0; color:var(--accent)"></i>
+                    <p style="font-weight:bold; font-size:18px;">${Math.round(data.daily.temperature_2m_max[i])}°</p>
+                    <p style="font-size:10px; opacity:0.5;">${Math.round(data.daily.temperature_2m_min[i])}°</p>
+                </div>
+            `;
+        }
+
+        lucide.createIcons();
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* MAP ENGINE                                                                 */
+    /* -------------------------------------------------------------------------- */
+    function initMap() {
+        state.map = L.map('mapView', { zoomControl: false }).setView([state.lat, state.lon], 11);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: 'Quantum Systems'
+        }).addTo(state.map);
+        state.mapMarker = L.marker([state.lat, state.lon]).addTo(state.map);
+    }
+
+    function updateMap() {
+        state.map.flyTo([state.lat, state.lon], 11);
+        state.mapMarker.setLatLng([state.lat, state.lon]);
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* SEARCH & NAVIGATION                                                        */
+    /* -------------------------------------------------------------------------- */
+    function setupSearch() {
+        const input = document.getElementById('globalSearch');
+        input.addEventListener('keypress', async (e) => {
+            if(e.key === 'Enter') {
+                const q = input.value;
+                notify("Searching", `Targeting: ${q}...`);
+                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`);
+                const data = await res.json();
+                
+                if(data.results) {
+                    state.city = data.results[0].name;
+                    state.lat = data.results[0].latitude;
+                    state.lon = data.results[0].longitude;
+                    document.getElementById('displayCity').innerText = state.city;
+                    fetchTelemetry();
+                    input.value = '';
+                } else {
+                    notify("Error", "Node not found.", "danger");
+                }
+            }
+        });
+    }
+
+    function switchScreen(scr) {
+        document.querySelectorAll('.os-screen').forEach(s => s.style.display = 'none');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        
+        document.getElementById(`scr-${scr}`).style.display = 'block';
+        document.getElementById(`nav-${scr}`).classList.add('active');
+        
+        if(scr === 'map') {
+            setTimeout(() => state.map.invalidateSize(), 100);
+        }
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* UI UTILS                                                                   */
+    /* -------------------------------------------------------------------------- */
+    function getWeatherInfo(code) {
+        const map = {
+            0: { label: "Clear Skies", icon: "sun" },
+            1: { label: "Mainly Clear", icon: "cloud-sun" },
+            3: { label: "Overcast", icon: "cloud" },
+            45: { label: "Fog Density High", icon: "cloud-fog" },
+            61: { label: "Light Precipitation", icon: "cloud-rain" },
+            95: { label: "Storm Warning", icon: "cloud-lightning" }
+        };
+        return map[code] || { label: "Stable", icon: "activity" };
+    }
+
+    function initClock() {
+        setInterval(() => {
+            document.getElementById('digitalClock').innerText = new Date().toLocaleTimeString();
+        }, 1000);
+    }
+
+    function notify(title, msg, type = "accent") {
+        const container = document.getElementById('notif-container');
+        const t = document.createElement('div');
+        t.className = 'toast';
+        t.innerHTML = `
+            <div class="toast-icon"><i data-lucide="bell"></i></div>
+            <div>
+                <b style="color:var(--${type})">${title}</b><br>
+                <small style="opacity:0.7">${msg}</small>
+            </div>
+        `;
+        container.appendChild(t);
+        lucide.createIcons();
+        setTimeout(() => {
+            t.style.opacity = '0';
+            t.style.transform = 'translateX(50px)';
+            setTimeout(() => t.remove(), 500);
+        }, 4000);
+    }
+
+    function updateChart(hourly) {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        if(state.chart) state.chart.destroy();
+        
+        state.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: hourly.time.slice(0, 24).map(t => t.split('T')[1]),
+                datasets: [{
+                    label: 'Thermal (C)',
+                    data: hourly.temperature_2m.slice(0, 24),
+                    borderColor: '#22d3ee',
+                    backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                    y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+    }
+
+    function initParticles() {
+        const canvas = document.getElementById('ambient-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        
+        let particles = Array.from({length: 80}, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2,
+            speed: 0.2 + Math.random() * 0.5
+        }));
+
+        function animate() {
+            if(state.particles) {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.fillStyle = 'rgba(34, 211, 238, 0.3)';
+                particles.forEach(p => {
+                    p.y -= p.speed;
+                    if(p.y < 0) p.y = canvas.height;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                    ctx.fill();
+                });
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    function openModal() { document.getElementById('sysModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('sysModal').style.display = 'none'; notify("System", "Kernel configuration updated."); }
 </script>
+
 </body>
 </html>

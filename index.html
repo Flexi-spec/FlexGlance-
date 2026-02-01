@@ -2,17 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#020617">
-    
-    <title>FlexGlance 4.0 | Neural Weather Nexus</title>
-    
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkZsZXhHbGFuY2UgNC4wIiwKICAic2hvcnRfbmFtZSI6ICJGbGV4R2xhbmNlIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwMjA2MTciLAogICJ0aGVtZV9jb2xvciI6ICIjMjJkM2VlIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pbWFnZXMudW5zcGxhc2guY29tL3Bob3RvLTE1MDQ2MDg1MjQ4NDEtNDJmZTZmMDMyYjRiP3c9MTkyIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9CiAgXQp9">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexGlance 4.0 | Titan Edition</title>
+    meta name="description" content="FlexGlance is a weather app providing real-time updates on temperature, wind, UV index, and rain forecasts with a clean, responsive design.">
+<link rel="icon" type="image/jpeg" href="favicon.png">
 
+<meta property="og:type" content="website">
+<meta property="og:title" content="FlexGlance — Command Center">
+<meta property="og:description" content="Check the live 24h trend and atmospheric data for your location.">
+<meta property="og:image" content="https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?w=1200">
+    <meta name="description" content="Next-generation weather intelligence system with neural particle rendering.">
+    <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FlexGlance">
+
+<meta name="theme-color" content="#020617">
+
+<link rel="manifest" href="manifest.json">
+
+<link rel="apple-touch-icon" href="favicon.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=JetBrains+Mono&family=Inter:wght@100;400;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=JetBrains+Mono&family=Inter:wght@100;400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -20,444 +32,670 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <style>
+        /* ==========================================================================
+           1. CSS VARIABLES & THEMING
+           ========================================================================== */
         :root {
-            --bg: #020617;
-            --accent: #22d3ee;
-            --accent-glow: rgba(34, 211, 238, 0.4);
-            --surface: rgba(15, 23, 42, 0.7);
-            --surface-thick: rgba(7, 10, 19, 0.98);
-            --border: rgba(255, 255, 255, 0.08);
-            --text-high: #f8fafc;
-            --text-low: #94a3b8;
-            --danger: #ef4444;
-            --safe: #10b981;
-            --radius-lg: 28px;
-            --safe-top: env(safe-area-inset-top);
-            --safe-bottom: env(safe-area-inset-bottom);
+            /* Core Palette */
+            --bg-deep: #020617;
+            --bg-surface: rgba(15, 23, 42, 0.6);
+            --bg-surface-solid: #0f172a;
+            --bg-glass: rgba(15, 23, 42, 0.85);
+            
+            /* Accent System */
+            --accent-primary: #22d3ee;
+            --accent-secondary: #818cf8;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --accent-glow: rgba(34, 211, 238, 0.3);
+            
+            /* Typography */
+            --text-vibrant: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            
+            /* Borders & Effects */
+            --border-thin: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(34, 211, 238, 0.5);
+            --radius-xl: 32px;
+            --radius-lg: 24px;
+            --radius-md: 12px;
+            --shadow-ui: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            
+            /* Sidebar */
+            --side-width: 100px;
+            --font-mono: 'JetBrains Mono', monospace;
         }
 
-        /* DYNAMIC THEMES */
-        body.weather-rainy { --accent: #60a5fa; background: radial-gradient(circle at top, #1e293b, #020617); }
-        body.weather-sunny { --accent: #fbbf24; background: radial-gradient(circle at top, #451a03, #020617); }
-        body.weather-storm { --accent: #a855f7; background: radial-gradient(circle at top, #2e1065, #020617); }
+        /* ==========================================================================
+           2. GLOBAL RESET & BASE
+           ========================================================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+        }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-        ::-webkit-scrollbar { display: none; }
-        
         body {
             font-family: 'Space Grotesk', sans-serif;
-            background: var(--bg);
-            color: var(--text-high);
-            height: 100vh; width: 100vw; overflow: hidden;
-            display: flex; flex-direction: column;
-            transition: background 1.5s ease;
+            background: var(--bg-deep);
+            color: var(--text-vibrant);
+            overflow: hidden; /* App-like feel */
+            height: 100vh;
+            width: 100vw;
         }
 
-        #ambient-canvas { position: fixed; inset: 0; z-index: -1; opacity: 0.4; pointer-events: none; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-thin); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
 
-        /* ARCHITECTURE */
-        .app-shell { display: flex; flex-direction: column; height: 100%; width: 100%; }
-
-        .nav-dock {
-            order: 2; height: calc(85px + var(--safe-bottom));
-            background: var(--surface-thick); backdrop-filter: blur(40px);
-            border-top: 1px solid var(--border);
-            display: flex; justify-content: space-around; align-items: center;
-            padding-bottom: var(--safe-bottom); z-index: 1000;
+        /* ==========================================================================
+           3. ANIMATED BACKGROUND (PARTICLES)
+           ========================================================================== */
+        #ambient-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.5;
+            pointer-events: none;
         }
 
-        .main-viewport {
-            order: 1; flex: 1; overflow-y: auto;
-            padding: calc(20px + var(--safe-top)) 20px 40px 20px;
+        /* ==========================================================================
+           4. LAYOUT ENGINE
+           ========================================================================== */
+        .app-shell {
+            display: grid;
+            grid-template-columns: var(--side-width) 1fr;
+            height: 100vh;
+            background: radial-gradient(circle at 10% 10%, #1e293b 0%, #020617 100%);
         }
 
-        /* COMPONENTS */
-        .nav-item {
-            width: 55px; height: 55px; display: flex; align-items: center; justify-content: center;
-            border-radius: 18px; color: var(--text-low); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        /* Sidebar Navigation */
+        .sidebar {
+            background: rgba(15, 23, 42, 0.4);
+            border-right: 1px solid var(--border-thin);
+            backdrop-filter: blur(40px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 0;
+            z-index: 100;
+        }
+
+        .logo-box {
+            width: 60px;
+            height: 60px;
+            background: var(--accent-primary);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px var(--accent-glow);
+            margin-bottom: 60px;
             cursor: pointer;
+            transition: 0.5s;
+            color: #000;
         }
-        .nav-item.active { color: var(--accent); background: rgba(34, 211, 238, 0.1); box-shadow: 0 0 20px var(--accent-glow); }
+        .logo-box:hover { transform: scale(1.1) rotate(90deg); }
 
+        .nav-stack { display: flex; flex-direction: column; gap: 20px; }
+        .nav-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .nav-btn:hover { color: var(--accent-primary); background: rgba(34, 211, 238, 0.1); }
+        .nav-btn.active { color: var(--accent-primary); background: rgba(34, 211, 238, 0.15); }
+        .nav-btn.active::after {
+            content: ''; position: absolute; left: -15px; width: 4px; height: 30px;
+            background: var(--accent-primary); border-radius: 0 10px 10px 0;
+            box-shadow: 0 0 20px var(--accent-primary);
+        }
+
+        /* Main Viewport */
+        .viewport {
+            padding: 40px 60px;
+            overflow-y: scroll;
+            position: relative;
+        }
+
+        /* ==========================================================================
+           5. UI COMPONENTS
+           ========================================================================== */
         .glass-card {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius-lg); padding: 25px;
-            backdrop-filter: blur(25px); margin-bottom: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-thin);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            backdrop-filter: blur(25px);
+            transition: 0.4s;
+            overflow: hidden;
+        }
+        .glass-card:hover { border-color: var(--accent-primary); background: rgba(15, 23, 42, 0.8); }
+
+        .search-wrapper {
+            position: relative;
+            width: 500px;
+        }
+        .search-input {
+            width: 100%;
+            background: var(--bg-surface-solid);
+            border: 1px solid var(--border-thin);
+            padding: 18px 25px 18px 60px;
+            border-radius: 100px;
+            color: #fff;
+            font-size: 15px;
+            transition: 0.4s;
+        }
+        .search-input:focus { border-color: var(--accent-primary); width: 110%; box-shadow: 0 0 40px var(--accent-glow); }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 30px;
+            margin-top: 40px;
         }
 
-        .search-field {
-            width: 100%; background: var(--surface-thick); border: 1px solid var(--border);
-            padding: 18px 20px 18px 55px; border-radius: 50px; color: #fff;
-            outline: none; margin-bottom: 25px; font-size: 16px;
-        }
-
-        /* MINUTE CAST ENGINE */
-        .minute-cast-container { margin-top: 25px; }
-        .minute-cast-grid {
-            display: flex; gap: 6px; overflow-x: auto; padding: 15px 0;
-            mask-image: linear-gradient(to right, black 85%, transparent);
-        }
-        .min-bar {
-            min-width: 8px; height: 50px; background: rgba(255,255,255,0.05);
-            border-radius: 4px; display: flex; align-items: flex-end; overflow: hidden;
-        }
-        .min-fill { width: 100%; background: var(--accent); transition: height 1.5s ease-out; }
-
-        /* HEALTH & LIFESTYLE */
-        .grid-compact { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .tag { font-size: 10px; font-weight: 700; padding: 6px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); text-transform: uppercase; }
+        .metric-value { font-family: 'Inter'; font-weight: 900; line-height: 1; }
+        .temp-large { font-size: 130px; letter-spacing: -8px; background: linear-gradient(to bottom, #fff, var(--text-muted)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        /* NEWS TICKER */
-        .ticker { background: rgba(34, 211, 238, 0.05); padding: 12px; border-radius: 15px; margin-bottom: 25px; overflow: hidden; white-space: nowrap; }
-        .ticker-move { display: inline-block; animation: ticker-kf 60s linear infinite; }
-        @keyframes ticker-kf { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-
-        /* TOAST SYSTEM */
-        #toast-wrap { position: fixed; top: 20px; right: 20px; z-index: 10001; width: 280px; }
-        .toast { background: var(--surface-thick); border-left: 4px solid var(--accent); padding: 15px; border-radius: 12px; margin-bottom: 10px; animation: toastIn 0.4s ease forwards; }
-        @keyframes toastIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
-
-        /* ANIMATIONS */
-        .pulse { animation: p-anim 2s infinite; }
-        @keyframes p-anim { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-        @media (min-width: 1024px) {
-            .app-shell { flex-direction: row; }
-            .nav-dock { order: 1; height: 100vh; width: 100px; flex-direction: column; border-right: 1px solid var(--border); border-top: none; }
-            .main-viewport { order: 2; padding: 60px 15%; }
+        /* Forecast Row */
+        .forecast-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 15px; margin-top: 20px; }
+        .forecast-tile {
+            background: rgba(255,255,255,0.03);
+            padding: 20px;
+            border-radius: var(--radius-md);
+            text-align: center;
+            border: 1px solid transparent;
+            transition: 0.3s;
         }
+        .forecast-tile:hover { background: rgba(255,255,255,0.08); transform: translateY(-5px); border-color: var(--border-thin); }
+
+        /* ==========================================================================
+           6. MAP & OVERLAYS
+           ========================================================================== */
+        #map-container {
+            height: 700px;
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            border: 1px solid var(--border-thin);
+        }
+
+        /* ==========================================================================
+           7. TERMINAL & SYSTEM LOGS
+           ========================================================================== */
+        .log-container {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            height: 500px;
+            overflow-y: auto;
+            color: var(--accent-primary);
+        }
+        .log-line { margin-bottom: 8px; opacity: 0.8; }
+        .log-line span { color: var(--text-dim); }
+
+        /* ==========================================================================
+           8. NOTIFICATIONS
+           ========================================================================== */
+        #toaster {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .toast {
+            background: var(--bg-glass);
+            border: 1px solid var(--accent-primary);
+            padding: 20px 30px;
+            border-radius: var(--radius-md);
+            animation: slideIn 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            box-shadow: var(--shadow-ui);
+        }
+        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
     </style>
 </head>
-<body class="weather-sunny">
+<body>
 
-<div id="toast-wrap"></div>
+<div id="toaster"></div>
+
 <canvas id="ambient-canvas"></canvas>
 
 <div class="app-shell">
-    <nav class="nav-dock">
-        <div class="nav-item active" onclick="ui('dash', this)"><i data-lucide="layout-grid"></i></div>
-        <div class="nav-item" onclick="ui('health', this)"><i data-lucide="heart-pulse"></i></div>
-        <div class="nav-item" onclick="ui('map', this)"><i data-lucide="map"></i></div>
-        <div class="nav-item" onclick="ui('news', this)"><i data-lucide="newspaper"></i></div>
-        <div class="nav-item" onclick="ui('logs', this)"><i data-lucide="terminal"></i></div>
-    </nav>
+    <aside class="sidebar">
+        <div class="logo-box" id="geoTrigger"><i data-lucide="crosshair"></i></div>
+        <nav class="nav-stack">
+            <div class="nav-btn active" data-target="dash"><i data-lucide="layout-grid"></i></div>
+            <div class="nav-btn" data-target="map"><i data-lucide="map"></i></div>
+            <div class="nav-btn" data-target="analytics"><i data-lucide="bar-chart-3"></i></div>
+            <div class="nav-btn" data-target="logs"><i data-lucide="terminal"></i></div>
+        </nav>
+        <div style="flex: 1"></div>
+        <div class="nav-btn" id="unitSwitch"><i data-lucide="settings-2"></i></div>
+        <div class="nav-btn" onclick="location.reload()"><i data-lucide="power"></i></div>
+    </aside>
 
-    <main class="main-viewport">
-        <div style="position:relative;">
-            <i data-lucide="search" style="position:absolute; left:20px; top:18px; color:var(--text-low); width:20px;"></i>
-            <input type="text" id="citySearch" class="search-field" placeholder="Enter target coordinates or district...">
-        </div>
+    <main class="viewport">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 50px;">
+            <div class="search-wrapper">
+                <i data-lucide="search" style="position: absolute; left: 25px; top: 18px; color: var(--text-muted); width: 20px;"></i>
+                <input type="text" id="citySearch" class="search-input" placeholder="Search Quantum Nodes (City, Coords)...">
+            </div>
+            <div style="text-align: right">
+                <div id="clockDisplay" style="font-family: var(--font-mono); font-size: 24px; font-weight: 700;">00:00:00</div>
+                <div style="color: var(--accent-success); font-size: 12px; font-weight: 700; letter-spacing: 2px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; background: var(--accent-success); border-radius: 50%; margin-right: 8px; box-shadow: 0 0 10px var(--accent-success);"></span>
+                    SYSTEMS ONLINE
+                </div>
+            </div>
+        </header>
 
-        <section id="tab-dash">
-            <div class="ticker"><div class="ticker-move" id="tickerText">Awaiting Neural Feed Handshake... Connecting to World Satellites...</div></div>
+        <section id="view-dash" class="view-pane">
+            <div style="margin-bottom: 40px;">
+                <h1 id="cityName" style="font-size: 72px; font-weight: 800; letter-spacing: -4px;">Syncing...</h1>
+                <p class="text-dim" style="font-family: var(--font-mono); font-size: 14px;">LAT: <span id="latCoord">--</span> | LON: <span id="lonCoord">--</span></p>
+            </div>
 
+            <div class="dashboard-grid">
+                <div class="glass-card" style="grid-column: span 4; grid-row: span 2;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <p class="text-muted" style="font-size: 12px; letter-spacing: 2px; text-transform: uppercase;">Atmospheric Temperature</p>
+                            <div class="metric-value temp-large" id="mainTemp">--°</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <i id="mainWeatherIcon" data-lucide="cloud-sun" style="width: 100px; height: 100px; color: var(--accent-primary);"></i>
+                            <h2 id="weatherDesc" style="margin-top: 15px; font-size: 24px; text-transform: uppercase;">Scanning...</h2>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 40px; margin-top: 40px; border-top: 1px solid var(--border-thin); padding-top: 30px;">
+                        <div>
+                            <p class="text-dim" style="font-size: 11px;">HUMIDITY</p>
+                            <h3 id="humidityVal" style="font-size: 28px;">--%</h3>
+                        </div>
+                        <div>
+                            <p class="text-dim" style="font-size: 11px;">WIND SPEED</p>
+                            <h3 id="windVal" style="font-size: 28px;">-- <small style="font-size: 14px;">km/h</small></h3>
+                        </div>
+                        <div>
+                            <p class="text-dim" style="font-size: 11px;">UV INDEX</p>
+                            <h3 id="uvVal" style="font-size: 28px;">--</h3>
+                        </div>
+                        <div>
+                            <p class="text-dim" style="font-size: 11px;">VISIBILITY</p>
+                            <h3 id="visVal" style="font-size: 28px;">-- <small style="font-size: 14px;">km</small></h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="grid-column: span 2;">
+                    <p class="text-muted" style="font-size: 12px; margin-bottom: 20px;">AIR QUALITY (AQI)</p>
+                    <div style="display: flex; align-items: center; justify-content: center; height: 150px;">
+                        <div id="aqiCircle" style="width: 120px; height: 120px; border: 8px solid var(--accent-success); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <span id="aqiNumber" style="font-size: 36px; font-weight: 900;">--</span>
+                            <span style="font-size: 10px; opacity: 0.6;">INDEX</span>
+                        </div>
+                    </div>
+                    <p id="aqiStatus" style="text-align: center; margin-top: 15px; font-size: 14px; font-weight: 700; color: var(--accent-success);">CLEAN AIR</p>
+                </div>
+
+                <div class="glass-card" style="grid-column: span 2;">
+                    <p class="text-muted" style="font-size: 12px; margin-bottom: 20px;">SOLAR POSITION</p>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span><i data-lucide="sunrise" style="width: 16px; margin-right: 10px;"></i> Sunrise</span>
+                            <span id="sunriseTime" class="metric-value">--:--</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span><i data-lucide="sunset" style="width: 16px; margin-right: 10px;"></i> Sunset</span>
+                            <span id="sunsetTime" class="metric-value">--:--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="grid-column: span 6;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                        <p class="text-muted" style="font-size: 12px;">PRECIPITATION & TEMP VARIANCE (24H)</p>
+                        <div style="display: flex; gap: 15px;">
+                            <span style="font-size: 11px;"><span style="color: var(--accent-primary)">●</span> TEMP</span>
+                            <span style="font-size: 11px;"><span style="color: var(--accent-secondary)">●</span> RAIN</span>
+                        </div>
+                    </div>
+                    <div style="height: 300px;"><canvas id="quantumChart"></canvas></div>
+                </div>
+
+                <div class="glass-card" style="grid-column: span 6;">
+                    <p class="text-muted" style="font-size: 12px; margin-bottom: 20px;">7-DAY SATELLITE FORECAST</p>
+                    <div class="forecast-row" id="forecastGrid"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-map" class="view-pane" style="display: none;">
+            <div id="map-container"></div>
+        </section>
+
+        <section id="view-logs" class="view-pane" style="display: none;">
             <div class="glass-card">
-                <div style="display:flex; justify-content:space-between; align-items:start;">
-                    <div>
-                        <h1 id="nodeLabel" style="font-size: 32px; letter-spacing: -1px;">Locating Node...</h1>
-                        <p id="clockLabel" style="font-size: 12px; color:var(--text-low); margin-top:4px;">SYNCING TIME...</p>
-                    </div>
-                    <div id="signal" class="pulse"><i data-lucide="radio" style="color:var(--accent)"></i></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+                    <h2>System Kernel Logs</h2>
+                    <button onclick="clearLogs()" style="background: none; border: 1px solid var(--border-thin); color: #fff; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Clear Console</button>
                 </div>
-
-                <div style="display:flex; align-items:center; gap:30px; margin: 40px 0;">
-                    <div id="mainTemp" style="font-size: 90px; font-weight: 900; letter-spacing: -4px;">--°</div>
-                    <div>
-                        <p id="mainDesc" style="font-weight:700; letter-spacing:2px; text-transform:uppercase;">STABLE</p>
-                        <p id="precipProb" style="color:var(--text-low); font-size:12px;">Precipitation: 0%</p>
-                    </div>
-                </div>
-
-                <div class="minute-cast-container">
-                    <p style="font-size:10px; font-weight:700; color:var(--text-low); margin-bottom:8px;">MINUTE-BY-MINUTE PRECIPITATION (HYPERLOCAL)</p>
-                    <div class="minute-cast-grid" id="minCast"></div>
-                    <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-low);">
-                        <span>Now</span><span>30m</span><span>60m</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="glass-card" style="border-left: 5px solid var(--accent);">
-                <div style="display:flex; gap:18px; align-items:center;">
-                    <div id="lifestyleIcon" style="background:rgba(255,255,255,0.05); padding:12px; border-radius:12px;"><i data-lucide="zap"></i></div>
-                    <div>
-                        <p style="font-weight:700; font-size:14px;">Personalized Activity Guide</p>
-                        <p id="lifestyleMsg" style="font-size:13px; color:var(--text-low);">Processing conditions for your profile...</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid-compact">
-                <div class="glass-card">
-                    <p style="font-size:10px; color:var(--text-low);">LIGHTNING RADAR</p>
-                    <h2 id="lightningTxt" style="margin-top:5px;">0 Strikes</h2>
-                    <p style="font-size:10px; opacity:0.5;">30mi Radius</p>
-                </div>
-                <div class="glass-card">
-                    <p style="font-size:10px; color:var(--text-low);">AQI STATUS</p>
-                    <h2 id="aqiTxt" style="margin-top:5px;">--</h2>
-                    <p style="font-size:10px; opacity:0.5;">Fine Particulates</p>
-                </div>
-            </div>
-
-            <div class="glass-card">
-                <p style="font-size:11px; color:var(--text-low); margin-bottom:15px;">THERMAL VARIANCE (24H)</p>
-                <div style="height:180px;"><canvas id="mainChart"></canvas></div>
-            </div>
-        </section>
-
-        <section id="tab-health" style="display:none;">
-            <h2 style="margin-bottom:20px;">Health & Bio-Alerts</h2>
-            <div class="glass-card">
-                <p style="font-size:12px; margin-bottom:10px;">AIR QUALITY INDEX</p>
-                <div style="height:8px; background:rgba(255,255,255,0.1); border-radius:10px; margin-bottom:20px;">
-                    <div id="aqiBar" style="height:100%; width:0%; background:var(--safe); border-radius:10px; transition: 1.5s;"></div>
-                </div>
-                <div class="grid-compact">
-                    <div class="tag">Pollen: Medium</div>
-                    <div class="tag">UV: Level 4</div>
-                    <div class="tag">Dust: Low</div>
-                    <div class="tag">Ozone: Safe</div>
-                </div>
-            </div>
-            <div class="glass-card" style="border-left: 5px solid var(--danger);">
-                <h4>Sun Exposure Alert</h4>
-                <p style="font-size:13px; color:var(--text-low); margin-top:8px;">High UV detected. Smart reminders suggest sunscreen application if staying outdoors > 20 mins.</p>
-            </div>
-        </section>
-
-        <section id="tab-map" style="display:none;">
-            <div class="glass-card" style="padding:0; height:500px; overflow:hidden; position:relative;">
-                <div id="mapView" style="height:100%; width:100%;"></div>
-                <div style="position:absolute; top:15px; right:15px; z-index:1000; display:flex; flex-direction:column; gap:8px;">
-                    <button class="tag" style="background:var(--surface-thick); cursor:pointer;" onclick="mapLayer('temp')">Temperature</button>
-                    <button class="tag" style="background:var(--surface-thick); cursor:pointer;" onclick="mapLayer('precip')">Rain Radar</button>
-                </div>
-            </div>
-            <div class="glass-card" style="margin-top:20px;">
-                <h4>Community Hazard Reporting</h4>
-                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:15px;">
-                    <button class="tag" onclick="report('Flooding')" style="border:1px solid var(--danger)">🌊 Flood</button>
-                    <button class="tag" onclick="report('Icy Roads')" style="border:1px solid var(--accent)">🧊 Ice</button>
-                    <button class="tag" onclick="report('Strong Winds')" style="border:1px solid #fff">🌬️ Wind</button>
-                </div>
-                <div id="reportFeed" style="margin-top:20px; font-size:12px; opacity:0.6;"></div>
-            </div>
-        </section>
-
-        <section id="tab-news" style="display:none;">
-            <h2 style="margin-bottom:20px;">Global Intelligence</h2>
-            <div id="newsFeed"></div>
-        </section>
-
-        <section id="tab-logs" style="display:none;">
-            <div class="glass-card" style="background:#000; font-family:'JetBrains Mono';">
-                <div id="kernelBox" style="height:450px; overflow-y:auto; color:var(--accent); font-size:11px; line-height:1.6;"></div>
+                <div class="log-container" id="sysLogs"></div>
             </div>
         </section>
     </main>
 </div>
 
 <script>
-    const KERNEL = {
-        lat: 0, lon: 0, city: "Detecting...",
-        chart: null, map: null, marker: null,
-        activeTab: 'dash'
-    };
+/**
+ * FLEXGLANCE TITAN CORE SCRIPT
+ * ----------------------------
+ * Modular Application Controller
+ */
 
-    // 
-    
-    document.addEventListener('DOMContentLoaded', () => {
-        lucide.createIcons();
-        initBG();
-        initClock();
-        boot();
-        setupMinuteCastUI();
-    });
+class FlexGlanceApp {
+    constructor() {
+        this.state = {
+            lat: 0,
+            lon: 0,
+            city: "Unknown Sector",
+            units: localStorage.getItem('fg_units') || 'metric',
+            map: null,
+            chart: null,
+            weatherCodeMap: {
+                0: { label: "Clear Skies", icon: "sun", color: "#fbbf24" },
+                1: { label: "Mainly Clear", icon: "cloud-sun", color: "#fbbf24" },
+                3: { label: "Overcast", icon: "cloud", color: "#94a3b8" },
+                45: { label: "Foggy", icon: "cloud-fog", color: "#64748b" },
+                61: { label: "Rainy", icon: "cloud-rain", color: "#22d3ee" },
+                95: { label: "Thunderstorm", icon: "cloud-lightning", color: "#f87171" }
+            }
+        };
 
-    function boot() {
-        log("FlexGlance Kernel 4.0.0 initializing...");
-        log("PWA Manifest registered.");
-        log("Establishing GPS handshake...");
-        getGPS();
-        loadNews();
+        this.init();
     }
 
-    // 1. HYPERLOCAL GPS ENGINE
-    async function getGPS() {
+    async init() {
+        lucide.createIcons();
+        this.startClock();
+        this.initParticles();
+        this.bindEvents();
+        this.log("Kernel v4.0.0 Initialized...");
+        
+        // Initial Position
+        await this.detectLocation();
+        this.initMap();
+    }
+
+    log(msg, type = "system") {
+        const logBox = document.getElementById('sysLogs');
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.innerHTML = `<span>[${new Date().toLocaleTimeString()}]</span> [${type.toUpperCase()}] ${msg}`;
+        logBox.prepend(line);
+    }
+
+    notify(title, msg, type = "primary") {
+        const toaster = document.getElementById('toaster');
+        const t = document.createElement('div');
+        t.className = 'toast';
+        t.style.borderColor = `var(--accent-${type})`;
+        t.innerHTML = `<strong>${title}</strong><br><small>${msg}</small>`;
+        toaster.appendChild(t);
+        setTimeout(() => t.remove(), 4000);
+    }
+
+    async detectLocation() {
+        this.log("Requesting GPS handshake...", "network");
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async (p) => {
-                KERNEL.lat = p.coords.latitude;
-                KERNEL.lon = p.coords.longitude;
-                
-                // Street-level neighborhood detection
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${KERNEL.lat}&lon=${KERNEL.lon}&format=json`);
-                const data = await res.json();
-                KERNEL.city = data.address.suburb || data.address.neighbourhood || data.address.city || "Main Node";
-                
-                document.getElementById('nodeLabel').innerText = KERNEL.city;
-                log(`GPS Lock: ${KERNEL.city} (${KERNEL.lat.toFixed(4)}, ${KERNEL.lon.toFixed(4)})`);
-                sync();
-                notify("GPS Verified", `Hyperlocal node: ${KERNEL.city}`);
-            }, (err) => {
-                log("GPS Failed. Defaulting to Central Hub.");
-                KERNEL.lat = 40.7128; KERNEL.lon = -74.0060;
-                sync();
-            });
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    this.state.lat = pos.coords.latitude;
+                    this.state.lon = pos.coords.longitude;
+                    this.fetchWeatherData();
+                },
+                err => {
+                    this.log("GPS Denied. Defaulting to Central Node (London).", "error");
+                    this.state.lat = 51.5074;
+                    this.state.lon = -0.1278;
+                    this.fetchWeatherData();
+                }
+            );
         }
     }
 
-    // 2. DATA SYNCHRONIZATION
-    async function sync() {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${KERNEL.lat}&longitude=${KERNEL.lon}&current_weather=true&hourly=temperature_2m,precipitation_probability,pm2_5,uv_index&timezone=auto`;
+    async fetchWeatherData() {
+        this.log(`Establishing satellite link to ${this.state.lat.toFixed(2)}...`, "network");
+        const u = this.state.units === 'metric' ? '' : '&temperature_unit=fahrenheit&windspeed_unit=mph';
         
         try {
-            const res = await fetch(url);
-            const data = await res.json();
+            // Weather API
+            const wUrl = `https://api.open-meteo.com/v1/forecast?latitude=${this.state.lat}&longitude=${this.state.lon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,precipitation_probability,uv_index,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto${u}`;
             
-            // Current Stats
-            const temp = Math.round(data.current_weather.temperature);
-            document.getElementById('mainTemp').innerText = temp + '°';
-            document.getElementById('mainDesc').innerText = weatherCode(data.current_weather.weathercode);
-            
-            // AQI & Health
-            const pm25 = data.hourly.pm2_5[0];
-            document.getElementById('aqiTxt').innerText = pm25 < 12 ? 'Good' : 'Moderate';
-            document.getElementById('aqiBar').style.width = (pm25 * 2) + '%';
-            
-            // Dynamic Theming
-            if(temp > 25) { document.body.className = 'weather-sunny'; lifestyle("Perfect for outdoor runs. Don't forget sunscreen."); }
-            else if(temp < 15) { document.body.className = 'weather-rainy'; lifestyle("Carry an umbrella. Neighborhood showers predicted."); }
-            
-            drawChart(data.hourly);
-            initMap();
-            updateMinuteBars(data.current_weather.weathercode);
+            // Geocoding (Reverse)
+            const gUrl = `https://nominatim.openstreetmap.org/reverse?lat=${this.state.lat}&lon=${this.state.lon}&format=json`;
+
+            // AQI API
+            const aUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${this.state.lat}&longitude=${this.state.lon}&current=european_aqi`;
+
+            const [wRes, gRes, aRes] = await Promise.all([
+                fetch(wUrl).then(r => r.json()),
+                fetch(gUrl).then(r => r.json()),
+                fetch(aUrl).then(r => r.json())
+            ]);
+
+            this.state.city = gRes.address.city || gRes.address.town || "Remote Outpost";
+            this.updateDashboard(wRes, aRes);
+            this.log(`Sync complete for ${this.state.city}`, "success");
         } catch (e) {
-            log("Sync Failure: API_HUB_OFFLINE");
+            this.log("Satellite link severed. Retrying...", "error");
         }
     }
 
-    // 3. MINUTE-CAST ENGINE (STREET LEVEL)
-    function setupMinuteCastUI() {
-        const grid = document.getElementById('minCast');
-        for(let i=0; i<30; i++) {
-            const bar = document.createElement('div');
-            bar.className = 'min-bar';
-            bar.innerHTML = `<div class="min-fill" style="height: 5%"></div>`;
-            grid.appendChild(bar);
-        }
-    }
+    updateDashboard(data, aqi) {
+        const cur = data.current_weather;
+        const info = this.state.weatherCodeMap[cur.weathercode] || { label: "Active", icon: "activity", color: "#fff" };
 
-    function updateMinuteBars(code) {
-        const fills = document.querySelectorAll('.min-fill');
-        fills.forEach(f => {
-            const level = (code > 50) ? Math.random() * 90 : Math.random() * 15;
-            f.style.height = level + '%';
-        });
-    }
+        // DOM Update
+        document.getElementById('cityName').innerText = this.state.city;
+        document.getElementById('latCoord').innerText = this.state.lat.toFixed(4);
+        document.getElementById('lonCoord').innerText = this.state.lon.toFixed(4);
+        document.getElementById('mainTemp').innerText = Math.round(cur.temperature) + '°';
+        document.getElementById('weatherDesc').innerText = info.label;
+        document.getElementById('humidityVal').innerText = data.hourly.relativehumidity_2m[0] + '%';
+        document.getElementById('windVal').innerText = cur.windspeed;
+        document.getElementById('uvVal').innerText = data.hourly.uv_index[0];
+        document.getElementById('visVal').innerText = (data.hourly.visibility[0] / 1000).toFixed(1);
 
-    // 4. LIFESTYLE & NEWS
-    function lifestyle(msg) {
-        document.getElementById('lifestyleMsg').innerText = msg;
-    }
+        // AQI Update
+        const aVal = aqi.current.european_aqi;
+        document.getElementById('aqiNumber').innerText = aVal;
+        const aqiCol = aVal < 50 ? "var(--accent-success)" : aVal < 100 ? "var(--accent-warning)" : "var(--accent-danger)";
+        document.getElementById('aqiCircle').style.borderColor = aqiCol;
+        document.getElementById('aqiStatus').innerText = aVal < 50 ? "OPTIMAL" : "CAUTION";
+        document.getElementById('aqiStatus').style.color = aqiCol;
 
-    async function loadNews() {
-        try {
-            const res = await fetch('https://ok.surf/api/v1/cors/news-feed');
-            const data = await res.json();
-            const world = data.World.slice(0, 10);
-            document.getElementById('tickerText').innerText = world.map(n => n.title).join(' • ');
-            document.getElementById('newsFeed').innerHTML = world.map(n => `
-                <div class="glass-card" onclick="window.open('${n.link}')">
-                    <h4 style="margin-bottom:8px;">${n.title}</h4>
-                    <p style="font-size:11px; opacity:0.6;">Source: ${n.source}</p>
+        // Solar
+        document.getElementById('sunriseTime').innerText = data.daily.sunrise[0].split('T')[1];
+        document.getElementById('sunsetTime').innerText = data.daily.sunset[0].split('T')[1];
+
+        // Icons & Forecast
+        const icon = document.getElementById('mainWeatherIcon');
+        icon.setAttribute('data-lucide', info.icon);
+        icon.style.color = info.color;
+        
+        this.renderForecast(data.daily);
+        this.renderChart(data.hourly);
+        lucide.createIcons();
+    }
+    
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Quantum Link Established (SW Registered)'))
+            .catch(err => console.log('SW Link Failure', err));
+    });
+}
+    renderForecast(daily) {
+        const grid = document.getElementById('forecastGrid');
+        grid.innerHTML = '';
+        for (let i = 0; i < 7; i++) {
+            const info = this.state.weatherCodeMap[daily.weathercode[i]] || { icon: "activity" };
+            const dayName = new Date(daily.time[i]).toLocaleDateString('en-US', { weekday: 'short' });
+            grid.innerHTML += `
+                <div class="forecast-tile">
+                    <p class="text-dim" style="font-size: 10px;">${dayName}</p>
+                    <i data-lucide="${info.icon}" style="margin: 15px 0; color: var(--accent-primary)"></i>
+                    <div style="font-weight: bold; font-size: 18px;">${Math.round(daily.temperature_2m_max[i])}°</div>
+                    <div style="font-size: 11px; opacity: 0.5;">${Math.round(daily.temperature_2m_min[i])}°</div>
                 </div>
-            `).join('');
-        } catch (e) { log("News server handshake failed."); }
-    }
-
-    // 5. CORE UTILS
-    function ui(tab, el) {
-        ['dash', 'health', 'map', 'news', 'logs'].forEach(t => document.getElementById(`tab-${t}`).style.display = 'none');
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById(`tab-${tab}`).style.display = 'block';
-        el.classList.add('active');
-        if(tab === 'map') setTimeout(() => KERNEL.map.invalidateSize(), 300);
-    }
-
-    function log(m) {
-        const b = document.getElementById('kernelBox');
-        b.innerHTML += `<div>[${new Date().toLocaleTimeString()}] > ${m}</div>`;
-        b.scrollTop = b.scrollHeight;
-    }
-
-    function notify(t, m) {
-        const w = document.getElementById('toast-wrap');
-        const i = document.createElement('div');
-        i.className = 'toast';
-        i.innerHTML = `<b>${t}</b><br><small>${m}</small>`;
-        w.appendChild(i);
-        setTimeout(() => { i.style.opacity = '0'; setTimeout(() => i.remove(), 500); }, 4000);
-    }
-
-    function initMap() {
-        if(!KERNEL.map) {
-            KERNEL.map = L.map('mapView', { zoomControl: false }).setView([KERNEL.lat, KERNEL.lon], 12);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(KERNEL.map);
-            KERNEL.marker = L.marker([KERNEL.lat, KERNEL.lon]).addTo(KERNEL.map);
-        } else {
-            KERNEL.map.flyTo([KERNEL.lat, KERNEL.lon], 12);
-            KERNEL.marker.setLatLng([KERNEL.lat, KERNEL.lon]);
+            `;
         }
     }
 
-    function report(type) {
-        const feed = document.getElementById('reportFeed');
-        feed.innerHTML = `<div><b>NEW REPORT:</b> ${type} detected at current coordinates. Broadcasted to network.</div>` + feed.innerHTML;
-        notify("Network Updated", "Crowdsourced report submitted.");
-    }
+    renderChart(hourly) {
+        const ctx = document.getElementById('quantumChart').getContext('2d');
+        if (this.state.chart) this.state.chart.destroy();
 
-    function weatherCode(c) {
-        if(c == 0) return "Clear Sky";
-        if(c < 45) return "Partly Cloudy";
-        if(c < 65) return "Light Rain";
-        return "Storm Risk";
-    }
-
-    function drawChart(hourly) {
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        if(KERNEL.chart) KERNEL.chart.destroy();
-        KERNEL.chart = new Chart(ctx, {
+        this.state.chart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: hourly.time.slice(0, 12).map(t => t.split('T')[1]),
-                datasets: [{
-                    data: hourly.temperature_2m.slice(0, 12),
-                    borderColor: '#22d3ee', tension: 0.4, fill: true, backgroundColor: 'rgba(34, 211, 238, 0.1)', pointRadius: 0
-                }]
+                labels: hourly.time.slice(0, 24).map(t => t.split('T')[1]),
+                datasets: [
+                    {
+                        label: 'Temperature',
+                        data: hourly.temperature_2m.slice(0, 24),
+                        borderColor: '#22d3ee',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        fill: true,
+                        backgroundColor: 'rgba(34, 211, 238, 0.1)'
+                    },
+                    {
+                        label: 'Precipitation %',
+                        data: hourly.precipitation_probability.slice(0, 24),
+                        borderColor: '#818cf8',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        tension: 0.4,
+                        pointRadius: 0
+                    }
+                ]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#64748b' } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }
+                }
+            }
         });
     }
 
-    function initClock() {
-        setInterval(() => { document.getElementById('clockLabel').innerText = new Date().toLocaleString(); }, 1000);
+    initMap() {
+        this.state.map = L.map('map-container', { zoomControl: false }).setView([this.state.lat, this.state.lon], 10);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(this.state.map);
+        this.marker = L.marker([this.state.lat, this.state.lon]).addTo(this.state.map);
     }
 
-    function initBG() {
-        const c = document.getElementById('ambient-canvas');
-        const x = c.getContext('2d');
-        c.width = window.innerWidth; c.height = window.innerHeight;
-        let p = Array.from({length: 50}, () => ({ x: Math.random()*c.width, y: Math.random()*c.height, v: Math.random()*0.4 }));
-        function a() {
-            x.clearRect(0,0,c.width, c.height);
-            x.fillStyle = 'rgba(34, 211, 238, 0.15)';
-            p.forEach(i => { i.y -= i.v; if(i.y < 0) i.y = c.height; x.fillRect(i.x, i.y, 2, 2); });
-            requestAnimationFrame(a);
-        }
-        a();
+    bindEvents() {
+        // Navigation
+        document.querySelectorAll('.nav-btn[data-target]').forEach(btn => {
+            btn.onclick = () => {
+                const target = btn.dataset.target;
+                document.querySelectorAll('.view-pane').forEach(p => p.style.display = 'none');
+                document.getElementById(`view-${target}`).style.display = 'block';
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (target === 'map') setTimeout(() => this.state.map.invalidateSize(), 200);
+            };
+        });
+
+        // Search
+        document.getElementById('citySearch').onkeypress = async (e) => {
+            if (e.key === 'Enter') {
+                const val = e.target.value;
+                this.log(`Targeting sector: ${val}...`, "network");
+                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${val}&count=1`).then(r => r.json());
+                if (res.results) {
+                    this.state.lat = res.results[0].latitude;
+                    this.state.lon = res.results[0].longitude;
+                    this.fetchWeatherData();
+                    this.state.map.flyTo([this.state.lat, this.state.lon], 10);
+                    this.marker.setLatLng([this.state.lat, this.state.lon]);
+                    e.target.value = '';
+                } else {
+                    this.notify("Node Error", "Coordinates not found in database", "danger");
+                }
+            }
+        };
+
+        // Geo Trigger
+        document.getElementById('geoTrigger').onclick = () => this.detectLocation();
     }
+
+    startClock() {
+        setInterval(() => {
+            document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString();
+        }, 1000);
+    }
+
+    initParticles() {
+        const canvas = document.getElementById('ambient-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        let particles = Array.from({length: 100}, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2,
+            speed: 0.1 + Math.random() * 0.4
+        }));
+
+        const animate = () => {
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(34, 211, 238, 0.2)';
+            particles.forEach(p => {
+                p.y -= p.speed;
+                if (p.y < 0) p.y = canvas.height;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                ctx.fill();
+            });
+            requestAnimationFrame(animate);
+        };
+        animate();
+    }
+}
+
+// Initial Launch
+const App = new FlexGlanceApp();
+
+function clearLogs() {
+    document.getElementById('sysLogs').innerHTML = '';
+    App.log("Buffer Cleared.");
+}
 </script>
 </body>
 </html>

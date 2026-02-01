@@ -763,8 +763,10 @@ if ('serviceWorker' in navigator) {
     }
 }
 
-// Initial Launch
-const App = new FlexGlanceApp();
+// Initial Launch - Only starts once the HTML is fully loaded
+window.addEventListener('DOMContentLoaded', () => {
+    window.App = new FlexGlanceApp();
+});
 
 function clearLogs() {
     document.getElementById('sysLogs').innerHTML = '';

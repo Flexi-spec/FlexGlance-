@@ -36,15 +36,28 @@
     font-family: sans-serif; 
     color: white;">
     
-    <div style="font-size: 14px; margin-bottom: 8px; font-weight: bold; text-transform: uppercase;">
-        Current Visitors
+    <div class="sidebar">
+    <div class="logo-box">
+        <i data-lucide="cloud-lightning"></i>
+    </div>
+    
+    <div class="nav-stack">
+        <div class="nav-btn active"><i data-lucide="layout-grid"></i></div>
+        <div class="nav-btn"><i data-lucide="map"></i></div>
+        <div class="nav-btn"><i data-lucide="bell"></i></div>
     </div>
 
-    <!-- Your Original Counter Scripts -->
-    <a href='https://www.free-counters.org/' style="display:none;">Counter</a>
-    <script type='text/javascript' src='https://www.freevisitorcounters.com/auth.php?id=da6d46fa2bf4bd6e278775aea8f3a52a925cf8ea'></script>
-    <script type="text/javascript" src="https://www.freevisitorcounters.com/en/home/counter/1498471/t/1"></script>
+    <!-- ADD THIS VISITOR COUNTER BOX HERE -->
+    <div class="visitor-box">
+        <span class="label">LIVE_TRAFFIC</span>
+        <div class="counter-wrapper">
+             <a href='https://www.free-counters.org' style="display:none;">Counter</a>
+             <script type='text/javascript' src='https://www.freevisitorcounters.com'></script>
+             <script type="text/javascript" src="https://www.freevisitorcounters.com"></script>
+        </div>
+    </div>
 </div>
+
     </aside>
     <main class="viewport">        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 50px;">            <div class="search-wrapper">                <i data-lucide="search" style="position: absolute; left: 25px; top: 18px; color: var(--text-muted); width: 20px;"></i>                <input type="text" id="citySearch" class="search-input" placeholder="Search Quantum Nodes (City, Coords)...">            </div>            <div style="text-align: right">                <div id="clockDisplay" style="font-family: var(--font-mono); font-size: 24px; font-weight: 700;">00:00:00</div>                <div style="color: var(--accent-success); font-size: 12px; font-weight: 700; letter-spacing: 2px;">                    <span style="display: inline-block; width: 8px; height: 8px; background: var(--accent-success); border-radius: 50%; margin-right: 8px; box-shadow: 0 0 10px var(--accent-success);"></span>                    SYSTEMS ONLINE                </div>            </div>        </header>
         <section id="view-dash" class="view-pane">            <div style="margin-bottom: 40px;">                <h1 id="cityName" style="font-size: 72px; font-weight: 800; letter-spacing: -4px;">Syncing...</h1>                <p class="text-dim" style="font-family: var(--font-mono); font-size: 14px;">LAT: <span id="latCoord">--</span> | LON: <span id="lonCoord">--</span></p>            </div>

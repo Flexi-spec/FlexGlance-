@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlexGlance Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ably/browser/static/ably.min.js"></script>
+<style>
+:root {
+    --bg-deep: #020617;
+    --bg-surface: rgba(15, 23, 42, 0.6);
+    --bg-glass: rgba(15, 23, 42, 0.85);
+    --accent-primary: #22d3ee;
+    --text-vibrant: #f8fafc;
+    --text-muted: #94a3b8;
+    --radius-lg: 24px;
+}
+body {font-family:'Space Grotesk',sans-serif; margin:0; background:var(--bg-deep); color:var(--text-vibrant);}
+h2,h3{margin-bottom:15px;}
+.container{padding:40px;}
+.glass-card{background:var(--bg-surface); border-radius:var(--radius-lg); padding:20px; margin-bottom:20px; backdrop-filter:blur(20px);}
+button{padding:8px 15px;border-radius:12px;border:none;background:#f87171;color:#000;margin-left:10px;cursor:pointer;}
+button:hover{background:#ef4444;}
+input{padding:10px;border-radius:12px;border:1px solid var(--text-muted);background:var(--bg-glass);color:var(--text-vibrant);}
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>FlexGlance Admin Panel</h2>
+    <p>Manage blogs and users</p>
+    <div id="blogsContainer"></div>
+</div>
+
+<script>
+// ----------------------------
+// ABLY SETUP
+// ----------------------------
+const ably = new Ably.Realtime.Promise('Oeqq-Q.ohNHLQ:6DGfzOenestCtjS6XtYJT4--KcZjk7hOh74aYWOV5Qs'); // Root key needed for admin
+const channel = ably.channels.get('flexglance-blogs');
+
+let blogs = JSON.parse(localStorage.getItem('fg_blogs')||'[]');
+
+// ----------------------------
+// RENDER BLOGS
+// ----------------------------
+function renderBlogs(){
+    const container = document.getElementById('blogsContainer');
+    container.innerHTML = '';
+    blogs.forEach((b,index)=>{
+        const div = document.createElement('div');
+        div.className='glass-card';
+        div.innerHTML = `
+            <h3>${b.title}</h3>
+            <p><strong>User:</strong> ${b.username} • ${new Date(b.timestamp).toLocaleString()}</p>
+            ${b.imgURL ? `<img src="${b.imgURL}" style="max-width:100%;border-radius:12px;margin-top:10px;">` : ''}
+            <p>${b.content}</p>
+            <button onclick="deleteBlog(${index})">Delete Blog</button>
+        `;
+        container.appendChild(div);
+    });
+}
+renderBlogs();
+
+// ----------------------------
+// DELETE BLOG
+// ----------------------------
+function deleteBlog(idx){
+    if(confirm('Delete this blog permanently?')){
+        const blog = blogs[idx];
+        blogs.splice(idx,1);
+        localStorage.setItem('fg_blogs',JSON.stringify(blogs));
+        channel.publish('delete-blog',{slug:blog.slug,username:blog.username}); // Notify clients
+        renderBlogs();
+    }
+}
+
+// ----------------------------
+// ABLY SUBSCRIBE FOR LIVE DELETES
+// ----------------------------
+channel.subscribe('new-blog', msg=>{
+    blogs.unshift(msg.data);
+    localStorage.setItem('fg_blogs',JSON.stringify(blogs));
+    renderBlogs();
+});
+
+channel.subscribe('delete-blog', msg=>{
+    blogs = blogs.filter(b=>!(b.slug===msg.data.slug && b.username===msg.data.username));
+    localStorage.setItem('fg_blogs',JSON.stringify(blogs));
+    renderBlogs();
+});
+</script>
+</body>
+</html>

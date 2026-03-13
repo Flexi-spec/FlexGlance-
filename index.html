@@ -2,26 +2,332 @@
 <meta property="og:type" content="website"><meta property="og:title" content="FlexGlance — Command Center"><meta property="og:description" content="Check the live 24h trend and atmospheric data for your location."><meta property="og:image" content="https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?w=1200">    <meta name="description" content="Next-generation weather intelligence system with neural particle rendering.">    <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="FlexGlance">
 <meta name="theme-color" content="#020617">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="favicon.png">    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=JetBrains+Mono&family=Inter:wght@100;400;700;900&display=swap" rel="stylesheet">    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>    <script src="https://unpkg.com/lucide@latest"></script>    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script><style>    /* ==========================================================================       1. CSS VARIABLES & THEMING       ========================================================================== */    :root {        --bg-deep: #020617;        --bg-surface: rgba(15, 23, 42, 0.6);        --bg-surface-solid: #0f172a;        --bg-glass: rgba(15, 23, 42, 0.85);        --accent-primary: #22d3ee;        --accent-secondary: #818cf8;        --accent-success: #10b981;        --accent-warning: #f59e0b;        --accent-danger: #ef4444;        --accent-glow: rgba(34, 211, 238, 0.3);        --text-vibrant: #f8fafc;        --text-muted: #94a3b8;        --text-dim: #64748b;        --border-thin: rgba(255, 255, 255, 0.08);        --border-focus: rgba(34, 211, 238, 0.5);        --radius-xl: 32px;        --radius-lg: 24px;        --radius-md: 12px;        --shadow-ui: 0 25px 50px -12px rgba(0, 0, 0, 0.5);        --side-width: 100px;        --font-mono: 'JetBrains Mono', monospace;    }
-    /* ==========================================================================       2. GLOBAL RESET & BASE       ========================================================================== */    * {        margin: 0;        padding: 0;        box-sizing: border-box;        outline: none;        -webkit-tap-highlight-color: transparent;    }
-    body {        font-family: 'Space Grotesk', sans-serif;        background: var(--bg-deep);        color: var(--text-vibrant);        overflow: hidden;         height: 100vh;        width: 100vw;    }
-    ::-webkit-scrollbar { width: 4px; }    ::-webkit-scrollbar-track { background: transparent; }    ::-webkit-scrollbar-thumb { background: var(--border-thin); border-radius: 10px; }    ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
-    #ambient-canvas {        position: fixed;        top: 0;        left: 0;        z-index: -1;        opacity: 0.5;        pointer-events: none;    }
-    /* ==========================================================================       4. LAYOUT ENGINE       ========================================================================== */    .app-shell {        display: grid;        grid-template-columns: var(--side-width) 1fr;        height: 100vh;        background: radial-gradient(circle at 10% 10%, #1e293b 0%, #020617 100%);    }
-    .sidebar {        background: rgba(15, 23, 42, 0.4);        border-right: 1px solid var(--border-thin);        backdrop-filter: blur(40px);        display: flex;        flex-direction: column;        align-items: center;        padding: 40px 0;        z-index: 1000;        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);    }
-    .logo-box {        width: 60px;        height: 60px;        background: var(--accent-primary);        border-radius: 20px;        display: flex;        align-items: center;        justify-content: center;        box-shadow: 0 0 30px var(--accent-glow);        margin-bottom: 60px;        cursor: pointer;        transition: 0.5s;        color: #000;    }    .logo-box:hover { transform: scale(1.1) rotate(90deg); }
-    .nav-stack { display: flex; flex-direction: column; gap: 20px; }    .nav-btn {        width: 60px;        height: 60px;        border-radius: 20px;        display: flex;        align-items: center;        justify-content: center;        color: var(--text-muted);        cursor: pointer;        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);        position: relative;    }    .nav-btn:hover { color: var(--accent-primary); background: rgba(34, 211, 238, 0.1); }    .nav-btn.active { color: var(--accent-primary); background: rgba(34, 211, 238, 0.15); }    .nav-btn.active::after {        content: ''; position: absolute; left: -15px; width: 4px; height: 30px;        background: var(--accent-primary); border-radius: 0 10px 10px 0;        box-shadow: 0 0 20px var(--accent-primary);    }
-    .viewport {        padding: 40px 60px;        overflow-y: scroll;        position: relative;        scroll-behavior: smooth;    }
-    /* ==========================================================================       5. UI COMPONENTS       ========================================================================== */    .glass-card {        background: var(--bg-surface);        border: 1px solid var(--border-thin);        border-radius: var(--radius-lg);        padding: 30px;        backdrop-filter: blur(25px);        transition: 0.4s;        overflow: hidden;    }    .glass-card:hover { border-color: var(--accent-primary); background: rgba(15, 23, 42, 0.8); }
-    .search-wrapper {        position: relative;        width: 100%;        max-width: 500px;    }    .search-input {        width: 100%;        background: var(--bg-surface-solid);        border: 1px solid var(--border-thin);        padding: 18px 25px 18px 60px;        border-radius: 100px;        color: #fff;        font-size: 15px;        transition: 0.4s;    }    .search-input:focus { border-color: var(--accent-primary); box-shadow: 0 0 40px var(--accent-glow); }
-    .dashboard-grid {        display: grid;        grid-template-columns: repeat(6, 1fr);        gap: 30px;        margin-top: 40px;    }
-    .metric-value { font-family: 'Inter'; font-weight: 900; line-height: 1; }    .temp-large {         font-size: clamp(80px, 10vw, 130px);         letter-spacing: -8px;         background: linear-gradient(to bottom, #fff, var(--text-muted));         -webkit-background-clip: text;         -webkit-text-fill-color: transparent;     }        .forecast-row {         display: grid;         grid-template-columns: repeat(7, 1fr);         gap: 15px;         margin-top: 20px;     }        .forecast-tile {        background: rgba(255,255,255,0.03);        padding: 20px;        border-radius: var(--radius-md);        text-align: center;        border: 1px solid transparent;        transition: 0.3s;    }    .forecast-tile:hover { background: rgba(255,255,255,0.08); transform: translateY(-5px); border-color: var(--border-thin); }
-    #map-container {        height: 700px;        border-radius: var(--radius-xl);        overflow: hidden;        border: 1px solid var(--border-thin);    }
-    /* ==========================================================================       6. MOBILE ADAPTATION       ========================================================================== */    @media (max-width: 1024px) { .viewport { padding: 30px; } .dashboard-grid { gap: 20px; } }
-    @media (max-width: 768px) {        .app-shell { grid-template-columns: 1fr; }        .sidebar {            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);            width: 90vw; height: 75px; flex-direction: row; padding: 0 20px;            border-radius: 25px; border-right: none; border-top: 1px solid var(--border-thin);            justify-content: space-around; box-shadow: 0 20px 50px rgba(0,0,0,0.8); background: var(--bg-glass);        }
-        .logo-box { display: none; }        .nav-stack { flex-direction: row; gap: 10px; width: 100%; justify-content: space-around; }        .nav-btn { width: 50px; height: 50px; }        .nav-btn.active::after { display: none; }        .nav-btn.active::before {            content: ''; position: absolute; bottom: -5px; width: 20px; height: 4px;            background: var(--accent-primary); border-radius: 10px; box-shadow: 0 0 10px var(--accent-primary);        }
-        .viewport { padding: 20px 20px 120px 20px; }        .dashboard-grid { grid-template-columns: 1fr; }        .glass-card { grid-column: span 1 !important; padding: 20px; }        .forecast-row { grid-template-columns: repeat(7, 120px); overflow-x: auto; padding-bottom: 10px; }        header { flex-direction: column; align-items: flex-start !important; gap: 20px; }        .search-wrapper { max-width: 100%; }        #map-container { height: 400px; }        .temp-large { letter-spacing: -4px; }    }
-    .log-container { font-family: var(--font-mono); font-size: 11px; height: 400px; overflow-y: auto; color: var(--accent-primary); }    #toaster { position: fixed; top: 20px; right: 20px; z-index: 10001; display: flex; flex-direction: column; gap: 10px; max-width: 90vw; }    .toast { background: var(--bg-glass); border: 1px solid var(--accent-primary); padding: 15px 20px; border-radius: var(--radius-md); animation: slideIn 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); }    @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }</style>    </head><body>
+<link rel="apple-touch-icon" href="favicon.png">    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=JetBrains+Mono&family=Inter:wght@100;400;700;900&display=swap" rel="stylesheet">    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>    <script src="https://unpkg.com/lucide@latest"></script>    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script><style>    
+ /* =========================================================
+   1. CSS VARIABLES & THEME
+========================================================= */
+:root {
+  --bg-deep: #020617;
+  --bg-surface: rgba(15, 23, 42, 0.6);
+  --bg-surface-solid: #0f172a;
+  --bg-glass: rgba(15, 23, 42, 0.85);
+  --accent-primary: #22d3ee;
+  --accent-secondary: #818cf8;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+  --accent-glow: rgba(34, 211, 238, 0.3);
+  --text-vibrant: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --border-thin: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(34, 211, 238, 0.5);
+  --radius-xl: 32px;
+  --radius-lg: 24px;
+  --radius-md: 12px;
+  --shadow-ui: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  --side-width: 100px;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* =========================================================
+   2. GLOBAL RESET
+========================================================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-vibrant);
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-thin);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+/* Ambient canvas */
+#ambient-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* =========================================================
+   3. LAYOUT
+========================================================= */
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--side-width) 1fr;
+  min-height: 100vh;
+  width: 100%;
+  background: radial-gradient(circle at 10% 10%, #1e293b 0%, #020617 100%);
+}
+
+.sidebar {
+  background: rgba(15, 23, 42, 0.4);
+  border-right: 1px solid var(--border-thin);
+  backdrop-filter: blur(40px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 0;
+  z-index: 1000;
+  transition: 0.4s;
+}
+
+.logo-box {
+  width: 60px;
+  height: 60px;
+  background: var(--accent-primary);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px var(--accent-glow);
+  margin-bottom: 60px;
+  cursor: pointer;
+  transition: 0.5s;
+  color: #000;
+}
+.logo-box:hover {
+  transform: scale(1.1) rotate(90deg);
+}
+
+.nav-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.nav-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.nav-btn:hover {
+  color: var(--accent-primary);
+  background: rgba(34, 211, 238, 0.1);
+}
+.nav-btn.active {
+  color: var(--accent-primary);
+  background: rgba(34, 211, 238, 0.15);
+}
+.nav-btn.active::after {
+  content: '';
+  position: absolute;
+  left: -15px;
+  width: 4px;
+  height: 30px;
+  background: var(--accent-primary);
+  border-radius: 0 10px 10px 0;
+  box-shadow: 0 0 20px var(--accent-primary);
+}
+
+.viewport {
+  padding: 40px 60px;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 1400px;
+  margin: auto;
+  scroll-behavior: smooth;
+}
+
+/* =========================================================
+   4. COMPONENTS
+========================================================= */
+.glass-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-thin);
+  border-radius: var(--radius-lg);
+  padding: 30px;
+  backdrop-filter: blur(25px);
+  transition: 0.4s;
+  width: 100%;
+}
+.glass-card:hover {
+  border-color: var(--accent-primary);
+  background: rgba(15, 23, 42, 0.8);
+}
+
+/* Search */
+.search-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+}
+.search-input {
+  width: 100%;
+  background: var(--bg-surface-solid);
+  border: 1px solid var(--border-thin);
+  padding: 18px 25px 18px 60px;
+  border-radius: 100px;
+  color: #fff;
+  font-size: 15px;
+  transition: 0.4s;
+}
+.search-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 40px var(--accent-glow);
+}
+
+/* Dashboard */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 30px;
+  margin-top: 40px;
+  width: 100%;
+}
+
+/* Temperature */
+.temp-large {
+  font-size: clamp(80px, 10vw, 130px);
+  letter-spacing: -8px;
+  background: linear-gradient(to bottom, #fff, var(--text-muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Forecast */
+.forecast-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+  width: 100%;
+}
+.forecast-tile {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 20px;
+  border-radius: var(--radius-md);
+  text-align: center;
+  border: 1px solid transparent;
+  transition: 0.3s;
+}
+.forecast-tile:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-5px);
+  border-color: var(--border-thin);
+}
+
+/* Map */
+#map-container {
+  height: 700px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--border-thin);
+}
+
+/* Logs */
+.log-container {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  height: 400px;
+  overflow-y: auto;
+  color: var(--accent-primary);
+}
+
+/* Toaster */
+#toaster {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 90vw;
+}
+.toast {
+  background: var(--bg-glass);
+  border: 1px solid var(--accent-primary);
+  padding: 15px 20px;
+  border-radius: var(--radius-md);
+  animation: slideIn 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity:0; }
+  to { transform: translateX(0); opacity:1; }
+}
+
+/* =========================================================
+   5. MEDIA QUERIES
+========================================================= */
+
+/* Tablet */
+@media (max-width:1024px){
+  .viewport{ padding:30px; }
+  .dashboard-grid{ grid-template-columns: repeat(2,1fr); gap:20px; }
+  .glass-card{ grid-column: span 1 !important; padding:25px; }
+  .temp-large{ font-size:70px; letter-spacing:-3px; }
+}
+
+/* Mobile */
+@media (max-width:768px){
+  .app-shell{ grid-template-columns:1fr; }
+
+  .sidebar{
+    position:fixed;
+    bottom:15px;
+    left:50%;
+    transform:translateX(-50%);
+    width:92%;
+    height:70px;
+    flex-direction:row;
+    padding:10px;
+    border-radius:25px;
+    border-right:none;
+    justify-content:space-around;
+    background:var(--bg-glass);
+    box-shadow:0 20px 40px rgba(0,0,0,0.6);
+  }
+  .logo-box{ display:none; }
+  .nav-stack{ flex-direction:row; gap:10px; width:100%; justify-content:space-around; }
+  .nav-btn{ width:48px; height:48px; }
+
+  .viewport{ padding:20px; padding-bottom:110px; }
+
+  .dashboard-grid{ grid-template-columns:1fr; gap:20px; }
+
+  .forecast-row{ grid-template-columns:repeat(7,110px); overflow-x:auto; padding-bottom:10px; }
+
+  header{ flex-direction:column; align-items:flex-start !important; gap:20px; }
+
+  .search-wrapper{ max-width:100%; width:100%; }
+
+  #map-container{ height:350px; }
+
+  .temp-large{ font-size:60px; letter-spacing:-2px; }
+}</style>    </head><body>
 <div id="toaster"></div>
 <canvas id="ambient-canvas"></canvas>
 <div class="app-shell">    <aside class="sidebar">        <div class="logo-box" id="geoTrigger"><i data-lucide="crosshair"></i></div>        <nav class="nav-stack">            <div class="nav-btn active" data-target="dash"><i data-lucide="layout-grid"></i></div>            <div class="nav-btn" data-target="map"><i data-lucide="map"></i></div>            <div class="nav-btn" data-target="logs"><i data-lucide="terminal"></i></div>        </nav>        <div style="flex: 1"></div>        <div class="nav-btn" id="unitSwitch"><i data-lucide="settings-2"></i></div>        <div class="nav-btn" onclick="location.reload()"><i data-lucide="power"></i></div>   <!-- Blue Weather Style Wrapper -->

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlexGlance 2.0 | Global Blog Feed</title>
+<meta name="description" content="Real-time weather blogs by users, powered by FlexGlance 2.0.">
+<link rel="icon" href="favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=JetBrains+Mono&family=Inter:wght@100;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ably/browser/static/ably.min.js"></script>
+<style>
+:root {
+    --bg-deep: #020617;
+    --bg-surface: rgba(15, 23, 42, 0.6);
+    --bg-glass: rgba(15, 23, 42, 0.85);
+    --accent-primary: #22d3ee;
+    --accent-secondary: #818cf8;
+    --text-vibrant: #f8fafc;
+    --text-muted: #94a3b8;
+    --radius-lg: 24px;
+}
+* {margin:0; padding:0; box-sizing:border-box;}
+body {font-family:'Space Grotesk', sans-serif; background:var(--bg-deep); color:var(--text-vibrant);}
+::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:var(--accent-primary);}
+a{text-decoration:none;color:inherit;}
+button{cursor:pointer;}
+.app-shell{display:grid; grid-template-columns:250px 1fr; height:100vh; background:radial-gradient(circle at 10% 10%, #1e293b 0%, #020617 100%);}
+.sidebar{background:var(--bg-glass); padding:40px 20px; display:flex; flex-direction:column; gap:30px;}
+.logo-box{width:60px;height:60px;background:var(--accent-primary);border-radius:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(34,211,238,0.3);cursor:pointer;}
+.nav-btn{padding:10px 15px;border-radius:12px;color:var(--text-muted);transition:0.3s;}
+.nav-btn:hover{color:var(--accent-primary);}
+.nav-btn.active{color:var(--accent-primary);}
+.viewport{padding:40px; overflow-y:scroll; height:100vh;}
+.glass-card{background:var(--bg-surface);border-radius:var(--radius-lg);padding:20px;margin-bottom:30px;backdrop-filter:blur(20px);}
+.floating-btn{position:fixed;bottom:40px;right:40px;width:60px;height:60px;border-radius:50%;background:var(--accent-primary);display:flex;align-items:center;justify-content:center;font-size:32px;color:#000;box-shadow:0 10px 20px rgba(0,0,0,0.4);}
+.blog-image{max-width:100%;border-radius:12px;margin-top:10px;}
+input,textarea{width:100%;padding:12px;margin:5px 0;border-radius:12px;border:1px solid var(--text-muted);background:var(--bg-surface);color:var(--text-vibrant);}
+input:focus,textarea:focus{outline:none;border-color:var(--accent-primary);}
+.comment-box{margin-top:15px;border-top:1px solid var(--text-muted);padding-top:10px;}
+.comment-item{margin-bottom:10px;font-size:14px;color:var(--text-muted);}
+</style>
+</head>
+<body>
+<div class="app-shell">
+    <aside class="sidebar">
+        <div class="logo-box">FG</div>
+        <div class="nav-btn active" data-target="feed">Global Feed</div>
+        <div class="nav-btn" data-target="myblogs">My Blogs</div>
+        <div class="nav-btn" data-target="profile">Profile</div>
+    </aside>
+    <main class="viewport">
+        <!-- LOGIN -->
+        <div id="login-screen" class="glass-card">
+            <h2>Login to FlexGlance Blogs</h2>
+            <input type="text" id="username" placeholder="Enter username">
+            <button id="loginBtn">Login</button>
+        </div>
+
+        <!-- GLOBAL FEED -->
+        <div id="feed" class="view-pane" style="display:none;">
+            <h2>Global Blog Feed</h2>
+            <div id="blogs-container"></div>
+        </div>
+
+        <!-- MY BLOGS -->
+        <div id="myblogs" class="view-pane" style="display:none;">
+            <h2>My Blogs</h2>
+            <div id="myblogs-container"></div>
+        </div>
+
+        <!-- NEW BLOG FLOATING BUTTON -->
+        <div class="floating-btn" id="newBlogBtn">+</div>
+
+        <!-- NEW BLOG FORM MODAL -->
+        <div id="blogFormModal" class="glass-card" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;width:90%;max-width:600px;z-index:1000;">
+            <h3>New Blog</h3>
+            <input type="text" id="blogTitle" placeholder="Title">
+            <textarea id="blogContent" placeholder="Write your blog here..." rows="6"></textarea>
+            <input type="file" id="blogImage">
+            <button id="postBlogBtn">Post Blog</button>
+            <button id="closeBlogForm" style="margin-top:10px;background:#444;">Cancel</button>
+        </div>
+    </main>
+</div>
+
+<script>
+// ----------------------------
+// SIMPLE LOGIN
+// ----------------------------
+let username = '';
+document.getElementById('loginBtn').onclick = () => {
+    const u = document.getElementById('username').value.trim();
+    if(u){username=u; localStorage.setItem('fg_user',username); initApp();}
+}
+function initApp(){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('feed').style.display='block';
+    setupAbly();
+}
+
+// ----------------------------
+// ABLY SETUP
+// ----------------------------
+let ably;
+let channel;
+function setupAbly(){
+    // REPLACE with your own Token Auth or use Root key on server
+    ably = new Ably.Realtime.Promise('Oeqq-Q.ohNHLQ:6DGfzOenestCtjS6XtYJT4--KcZjk7hOh74aYWOV5Qs');
+    channel = ably.channels.get('flexglance-blogs');
+
+    // Subscribe to new blogs
+    channel.subscribe('new-blog', msg=>{
+        addBlogToFeed(msg.data, false);
+    });
+
+    // Load initial blogs (could fetch from server or localStorage)
+    if(localStorage.getItem('fg_blogs')){
+        JSON.parse(localStorage.getItem('fg_blogs')).forEach(b=>addBlogToFeed(b,false));
+    }
+}
+
+// ----------------------------
+// BLOG MANAGEMENT
+// ----------------------------
+document.getElementById('newBlogBtn').onclick = ()=>{document.getElementById('blogFormModal').style.display='block';}
+document.getElementById('closeBlogForm').onclick = ()=>{document.getElementById('blogFormModal').style.display='none';}
+
+document.getElementById('postBlogBtn').onclick = async ()=>{
+    const title=document.getElementById('blogTitle').value.trim();
+    const content=document.getElementById('blogContent').value.trim();
+    const imageFile=document.getElementById('blogImage').files[0];
+    if(!title || !content) return alert('Title and content required');
+
+    let imgURL='';
+    if(imageFile){
+        // Use FileReader for local preview (or upload to your server)
+        const reader = new FileReader();
+        reader.onloadend=()=>{ 
+            imgURL=reader.result;
+            publishBlog(title,content,imgURL);
+        };
+        reader.readAsDataURL(imageFile);
+    } else {
+        publishBlog(title,content,imgURL);
+    }
+}
+
+function publishBlog(title,content,imgURL){
+    const slug = title.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,'');
+    const blogData = {username, title, content, imgURL, slug, timestamp:Date.now()};
+    // Store locally for demo (replace with server-side DB)
+    let blogs=JSON.parse(localStorage.getItem('fg_blogs')||'[]');
+    blogs.unshift(blogData);
+    localStorage.setItem('fg_blogs',JSON.stringify(blogs));
+    // Publish to Ably
+    channel.publish('new-blog', blogData);
+    addBlogToFeed(blogData,true);
+    document.getElementById('blogFormModal').style.display='none';
+    document.getElementById('blogTitle').value=''; document.getElementById('blogContent').value='';
+}
+
+// ----------------------------
+// ADD BLOG TO FEED
+// ----------------------------
+function addBlogToFeed(blog,prepend=true){
+    const container=document.getElementById('blogs-container');
+    const html = `
+        <div class="glass-card">
+            <h3>${blog.title}</h3>
+            <p><strong>${blog.username}</strong> • ${new Date(blog.timestamp).toLocaleString()}</p>
+            ${blog.imgURL ? `<img src="${blog.imgURL}" class="blog-image">` : ''}
+            <p>${blog.content}</p>
+            <div class="comment-box">
+                <input type="text" placeholder="Comment..." onkeypress="if(event.key==='Enter'){alert('Comment feature coming soon!');}">
+            </div>
+        </div>
+    `;
+    if(prepend){container.insertAdjacentHTML('afterbegin',html);}
+    else{container.insertAdjacentHTML('beforeend',html);}
+}
+
+// ----------------------------
+// NAVIGATION
+// ----------------------------
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+    btn.onclick=()=>{
+        document.querySelectorAll('.view-pane').forEach(v=>v.style.display='none');
+        const target=btn.dataset.target;
+        document.getElementById(target).style.display='block';
+        document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+    };
+});
+</script>
+</body>
+</html>
